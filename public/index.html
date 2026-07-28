@@ -1,0 +1,636 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>한화솔루션 개정 예정 법령 검토</title>
+<style>
+  :root{
+    --bg:#f5f6f7;
+    --header-bg:#171717;
+    --accent:#e8542c;
+    --accent-dark:#c8431f;
+    --text-main:#1a1a1a;
+    --text-sub:#6b7280;
+    --border:#e5e7eb;
+    --card-bg:#ffffff;
+    --pill-law:#fde8e2;
+    --pill-law-text:#c8431f;
+    --pill-decree:#e2f0fd;
+    --pill-decree-text:#1d6fb8;
+    --pill-rule:#eaf7e9;
+    --pill-rule-text:#2e8b3d;
+    --status-pending-bg:#fef3e2;
+    --status-pending-text:#b6740a;
+    --status-done-bg:#e9f8ec;
+    --status-done-text:#238a3f;
+  }
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{
+    font-family:"Pretendard","Apple SD Gothic Neo",-apple-system,BlinkMacSystemFont,"Malgun Gothic",sans-serif;
+    background:var(--bg);
+    color:var(--text-main);
+    font-size:14px;
+  }
+
+  header.topbar{
+    background:var(--header-bg);
+    color:#fff;
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    padding:14px 28px;
+  }
+  .topbar-left{display:flex;align-items:center;gap:12px;}
+  .logo-mark{
+    width:34px;height:34px;border-radius:8px;
+    background:var(--accent);
+    display:flex;align-items:center;justify-content:center;
+    font-weight:700;
+  }
+  .topbar-title{font-size:16px;font-weight:700;letter-spacing:-0.2px;}
+  .topbar-right{display:flex;align-items:center;gap:14px;font-size:13px;color:#d1d5db;}
+  .badge-urgent{
+    background:var(--accent);
+    color:#fff;
+    padding:6px 12px;
+    border-radius:6px;
+    font-weight:700;
+    font-size:13px;
+    display:none;
+  }
+  .badge-urgent.show{display:inline-block;}
+  .icon-btn{
+    width:30px;height:30px;border-radius:6px;
+    background:#2a2a2a;
+    display:flex;align-items:center;justify-content:center;
+    color:#d1d5db;font-size:13px;
+    cursor:pointer;
+    border:none;
+  }
+  .icon-btn.spinning{animation:spin 0.8s linear infinite;}
+  @keyframes spin{from{transform:rotate(0deg);}to{transform:rotate(360deg);}}
+
+  nav.tabs{
+    background:#fff;
+    border-bottom:1px solid var(--border);
+    display:flex;
+    gap:28px;
+    padding:0 28px;
+    overflow-x:auto;
+    white-space:nowrap;
+  }
+  nav.tabs a{
+    display:inline-block;
+    padding:14px 2px;
+    color:var(--text-sub);
+    text-decoration:none;
+    font-size:14px;
+    font-weight:500;
+    border-bottom:2px solid transparent;
+    cursor:pointer;
+  }
+  nav.tabs a.active{
+    color:var(--text-main);
+    font-weight:700;
+    border-bottom:2px solid var(--accent);
+  }
+
+  .filter-bar{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    padding:18px 28px 4px 28px;
+    flex-wrap:wrap;
+    gap:10px;
+  }
+  .filter-left{display:flex;align-items:center;gap:8px;flex-wrap:wrap;}
+  .search-input{
+    width:260px;
+    padding:9px 12px;
+    border:1px solid var(--border);
+    border-radius:6px;
+    font-size:13px;
+    background:#fff;
+  }
+  .chip{
+    padding:8px 16px;
+    border-radius:6px;
+    border:1px solid var(--border);
+    background:#fff;
+    color:var(--text-sub);
+    font-size:13px;
+    font-weight:500;
+    cursor:pointer;
+  }
+  .chip.active{
+    background:var(--accent);
+    border-color:var(--accent);
+    color:#fff;
+  }
+  .filter-right{display:flex;gap:8px;}
+  .btn-primary{
+    padding:9px 16px;
+    border-radius:6px;
+    border:none;
+    background:var(--accent);
+    color:#fff;
+    font-size:13px;
+    font-weight:600;
+    cursor:pointer;
+  }
+  .btn-primary:hover{background:var(--accent-dark);}
+  .btn-primary:disabled{opacity:0.6;cursor:default;}
+
+  main{padding:20px 28px 60px 28px;}
+  .status-line{
+    padding:8px 0 16px 0;
+    font-size:13px;
+    color:var(--text-sub);
+  }
+  .status-line.error{color:#c0392b;}
+
+  .card-grid{
+    display:grid;
+    grid-template-columns:repeat(auto-fill, minmax(360px, 1fr));
+    gap:16px;
+  }
+  .empty-state{
+    padding:60px 0;
+    text-align:center;
+    color:var(--text-sub);
+    font-size:14px;
+  }
+  .card{
+    background:var(--card-bg);
+    border:1px solid var(--border);
+    border-radius:10px;
+    padding:18px;
+  }
+  .card-top{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    margin-bottom:10px;
+  }
+  .pill{
+    display:inline-block;
+    padding:3px 10px;
+    border-radius:5px;
+    font-size:12px;
+    font-weight:700;
+  }
+  .pill-law{background:var(--pill-law);color:var(--pill-law-text);}
+  .pill-decree{background:var(--pill-decree);color:var(--pill-decree-text);}
+  .pill-rule{background:var(--pill-rule);color:var(--pill-rule-text);}
+
+  .status{
+    padding:3px 10px;
+    border-radius:5px;
+    font-size:12px;
+    font-weight:700;
+  }
+  .status-pending{background:var(--status-pending-bg);color:var(--status-pending-text);}
+  .status-done{background:var(--status-done-bg);color:var(--status-done-text);}
+
+  .card-title{
+    font-size:15px;
+    font-weight:700;
+    margin-bottom:4px;
+  }
+  .card-article{
+    font-size:13px;
+    color:var(--text-sub);
+    margin-bottom:12px;
+  }
+  .card-dates{
+    display:flex;
+    gap:16px;
+    flex-wrap:wrap;
+    font-size:12px;
+    color:var(--text-sub);
+    margin-bottom:12px;
+    padding-bottom:12px;
+    border-bottom:1px dashed var(--border);
+  }
+  .card-dates strong{color:var(--text-main);font-weight:600;}
+  .dday{
+    margin-left:auto;
+    color:var(--accent-dark);
+    font-weight:700;
+  }
+  .dday.far{color:var(--text-sub);}
+
+  .card-summary{
+    font-size:13px;
+    line-height:1.6;
+    color:var(--text-main);
+    margin-bottom:14px;
+  }
+  .card-summary.placeholder{color:var(--text-sub);}
+  .card-summary .summary-item{margin-bottom:6px;}
+  .card-summary .summary-item:last-child{margin-bottom:0;}
+  .card-summary .summary-jo{font-weight:700;color:var(--accent-dark);}
+  .card-summary .summary-error{color:#c0392b;}
+
+  .card-toggle{
+    font-size:12px;
+    color:var(--accent-dark);
+    font-weight:600;
+    cursor:pointer;
+    display:flex;
+    align-items:center;
+    gap:4px;
+    margin-bottom:10px;
+    user-select:none;
+  }
+
+  .diff-box{
+    display:none;
+    background:#fafafa;
+    border:1px solid var(--border);
+    border-radius:6px;
+    padding:12px;
+    margin-bottom:10px;
+    font-size:12px;
+    line-height:1.6;
+  }
+  .diff-box.show{display:block;}
+  .diff-article{margin-bottom:14px;}
+  .diff-article:last-child{margin-bottom:0;}
+  .diff-article-title{font-weight:700;margin-bottom:6px;}
+  .diff-row{display:flex;gap:10px;margin-bottom:8px;}
+  .diff-label{
+    flex:0 0 54px;
+    font-weight:700;
+    color:var(--text-sub);
+  }
+  .diff-old{color:#9ca3af;text-decoration:line-through;white-space:pre-wrap;}
+  .diff-new{color:var(--accent-dark);font-weight:600;white-space:pre-wrap;}
+  .diff-placeholder{color:var(--text-sub);}
+
+  .card-actions{
+    display:flex;
+    gap:6px;
+    justify-content:flex-end;
+  }
+  .btn-mini{
+    padding:6px 12px;
+    border-radius:5px;
+    border:1px solid var(--accent);
+    background:#fff;
+    color:var(--accent-dark);
+    font-size:12px;
+    font-weight:600;
+    cursor:pointer;
+  }
+  .btn-mini.filled{
+    background:var(--accent);
+    color:#fff;
+    border-color:var(--accent);
+  }
+</style>
+</head>
+<body>
+
+<header class="topbar">
+  <div class="topbar-left">
+    <div class="logo-mark">한</div>
+    <div class="topbar-title">한화솔루션 개정 예정 법령 검토</div>
+  </div>
+  <div class="topbar-right">
+    <span id="todayLabel"></span>
+    <span class="badge-urgent" id="urgentBadge">시행임박 0건</span>
+    <button class="icon-btn" id="refreshIconBtn" title="새로고침">⟳</button>
+  </div>
+</header>
+
+<nav class="tabs" id="lawTabs"></nav>
+
+<div class="filter-bar">
+  <div class="filter-left">
+    <input class="search-input" type="text" id="searchInput" placeholder="법령명·조문 검색">
+    <div class="chip active" data-status-filter="all">전체</div>
+    <div class="chip" data-status-filter="imminent">시행임박</div>
+    <div class="chip" data-status-filter="summarized">요약완료</div>
+    <div class="chip" data-status-filter="pending">처리대기</div>
+  </div>
+  <div class="filter-right">
+    <button class="btn-primary" id="refreshBtn">지금 새로고침</button>
+  </div>
+</div>
+
+<main>
+  <div class="status-line" id="statusLine">Firestore에서 불러오는 중...</div>
+  <div class="card-grid" id="cardGrid"></div>
+</main>
+
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/12.16.0/firebase-app.js";
+  import {
+    getFirestore,
+    collection,
+    getDocs,
+  } from "https://www.gstatic.com/firebasejs/12.16.0/firebase-firestore.js";
+
+  // Firebase 클라이언트 설정은 비밀값이 아니다 — 브라우저에 그대로 노출되어도
+  // 안전하며(접근 제어는 Firestore 보안 규칙이 담당), 실제 프로젝트 값으로
+  // 채워 넣으면 된다. Firebase 콘솔 → 프로젝트 설정 → 일반 → "내 앱"에서 확인.
+  const firebaseConfig = {
+    apiKey: "YOUR_API_KEY",
+    authDomain: "YOUR_PROJECT_ID.firebaseapp.com",
+    projectId: "YOUR_PROJECT_ID",
+    storageBucket: "YOUR_PROJECT_ID.appspot.com",
+    messagingSenderId: "YOUR_SENDER_ID",
+    appId: "YOUR_APP_ID",
+  };
+
+  const COLLECTION_NAME = "pendingAmendments";
+  const IMMINENT_DAYS = 30; // 이 기간 이내로 시행되면 "시행임박"으로 분류
+
+  // 15개 감시 대상 법령의 기본 명칭(시행령/시행규칙 접두 매칭용).
+  const LAW_GROUPS = [
+    { key: "산업안전보건법", label: "산업안전보건법" },
+    { key: "고압가스 안전관리법", label: "고압가스안전관리법" },
+    { key: "액화석유가스의 안전관리 및 사업법", label: "액화석유가스안전관리 및 사업법" },
+    { key: "에너지이용 합리화법", label: "에너지이용합리화법" },
+    { key: "도시가스사업법", label: "도시가스사업법" },
+  ];
+
+  const app = initializeApp(firebaseConfig);
+  const db = getFirestore(app);
+
+  const state = {
+    docs: [],
+    lawTab: "all",
+    statusFilter: "all",
+    search: "",
+  };
+
+  function escapeHtml(value) {
+    return String(value ?? "").replace(/[&<>"']/g, (ch) => (
+      { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[ch]
+    ));
+  }
+
+  function todayYmdDots() {
+    const d = new Date();
+    const y = d.getFullYear();
+    const m = String(d.getMonth() + 1).padStart(2, "0");
+    const day = String(d.getDate()).padStart(2, "0");
+    return `${y}.${m}.${day}`;
+  }
+
+  function parseDots(dateStr) {
+    // "2026.08.01" -> Date (자정 기준)
+    const [y, m, d] = String(dateStr).split(".").map(Number);
+    return new Date(y, (m || 1) - 1, d || 1);
+  }
+
+  function earliestDate(datesArr) {
+    if (!Array.isArray(datesArr) || datesArr.length === 0) return null;
+    return [...datesArr].sort()[0];
+  }
+
+  function computeDday(datesArr) {
+    const earliest = earliestDate(datesArr);
+    if (!earliest) return null;
+    const target = parseDots(earliest);
+    const today = parseDots(todayYmdDots());
+    return Math.round((target - today) / 86400000);
+  }
+
+  function pillFor(lawName) {
+    if (lawName.includes("시행규칙")) return { cls: "pill-rule", label: "시행규칙" };
+    if (lawName.includes("시행령")) return { cls: "pill-decree", label: "시행령" };
+    return { cls: "pill-law", label: "법률" };
+  }
+
+  function statusBadgeFor(status) {
+    return status === "summarized"
+      ? { cls: "status-done", label: "요약완료" }
+      : { cls: "status-pending", label: "처리대기" };
+  }
+
+  function articleLineFor(doc) {
+    const diffs = doc.articleDiffs;
+    if (Array.isArray(diffs) && diffs.length > 0) {
+      const first = diffs[0];
+      const title = first.조문제목 ? ` (${escapeHtml(first.조문제목)})` : "";
+      const rest = diffs.length > 1 ? ` 외 ${diffs.length - 1}개 조문` : "";
+      return `${escapeHtml(first.조문번호 || "")}${title}${rest}`;
+    }
+    if (Array.isArray(doc.changedArticles) && doc.changedArticles.length > 0) {
+      return `${escapeHtml(doc.changedArticles.join(", "))} · 조문 본문 조회 대기 중`;
+    }
+    return "변경 조문 추출 대기 중";
+  }
+
+  function summaryHtmlFor(doc) {
+    const summary = doc.summary;
+    if (!Array.isArray(summary) || summary.length === 0) {
+      return `<div class="card-summary placeholder">요약 생성 대기 중입니다.</div>`;
+    }
+    const items = summary
+      .map((item) => {
+        if (item.error || !item.요약) {
+          return `<div class="summary-item"><span class="summary-jo">${escapeHtml(item.조문번호 || "")}</span> <span class="summary-error">요약 실패${item.error ? ": " + escapeHtml(item.error) : ""}</span></div>`;
+        }
+        const label = summary.length > 1 ? `<span class="summary-jo">${escapeHtml(item.조문번호 || "")}</span> ` : "";
+        return `<div class="summary-item">${label}${escapeHtml(item.요약)}</div>`;
+      })
+      .join("");
+    return `<div class="card-summary">${items}</div>`;
+  }
+
+  function diffBoxHtmlFor(doc) {
+    const diffs = doc.articleDiffs;
+    if (!Array.isArray(diffs) || diffs.length === 0) {
+      return `<div class="diff-placeholder">아직 조문 본문을 조회하지 못했습니다.</div>`;
+    }
+    return diffs
+      .map((d) => {
+        const title = d.조문번호 ? escapeHtml(d.조문번호) + (d.조문제목 ? ` (${escapeHtml(d.조문제목)})` : "") : "";
+        return `
+          <div class="diff-article">
+            <div class="diff-article-title">${title}</div>
+            <div class="diff-row">
+              <div class="diff-label">현행</div>
+              <div class="diff-old">${escapeHtml(d.현행본문 || "(내용 없음)")}</div>
+            </div>
+            <div class="diff-row">
+              <div class="diff-label">개정</div>
+              <div class="diff-new">${escapeHtml(d.개정본문 || "(내용 없음)")}</div>
+            </div>
+          </div>`;
+      })
+      .join("");
+  }
+
+  function cardHtmlFor(doc) {
+    const pill = pillFor(doc.법령명 || "");
+    const badge = statusBadgeFor(doc.처리상태);
+    const dday = computeDday(doc.시행예정일);
+    const ddayLabel = dday === null ? "" : dday >= 0 ? `D-${dday}` : `D+${-dday}`;
+    const ddayCls = dday !== null && dday <= IMMINENT_DAYS ? "" : "far";
+    const 시행예정표시 = Array.isArray(doc.시행예정일) ? doc.시행예정일.join(" / ") : "";
+
+    return `
+      <div class="card">
+        <div class="card-top">
+          <span class="pill ${pill.cls}">${pill.label}</span>
+          <span class="status ${badge.cls}">${badge.label}</span>
+        </div>
+        <div class="card-title">${escapeHtml(doc.법령명 || "")}</div>
+        <div class="card-article">${articleLineFor(doc)}</div>
+        <div class="card-dates">
+          <div>공포일 <strong>${escapeHtml(doc.공포일 || "-")}</strong></div>
+          <div>시행예정 <strong>${escapeHtml(시행예정표시 || "-")}</strong></div>
+          <div class="dday ${ddayCls}">${ddayLabel}</div>
+        </div>
+        ${summaryHtmlFor(doc)}
+        <div class="card-toggle" data-toggle>▸ 현행 / 개정 조문 비교 보기</div>
+        <div class="diff-box">${diffBoxHtmlFor(doc)}</div>
+        <div class="card-actions">
+          <button class="btn-mini filled" disabled title="다음 단계에서 연결됩니다">담당자 배정</button>
+        </div>
+      </div>`;
+  }
+
+  function matchesLawTab(doc, tabKey) {
+    if (tabKey === "all") return true;
+    return (doc.법령명 || "").startsWith(tabKey);
+  }
+
+  function matchesStatusFilter(doc, filter) {
+    if (filter === "all") return true;
+    if (filter === "summarized") return doc.처리상태 === "summarized";
+    if (filter === "pending") return doc.처리상태 === "pending";
+    if (filter === "imminent") {
+      const dday = computeDday(doc.시행예정일);
+      return dday !== null && dday <= IMMINENT_DAYS;
+    }
+    return true;
+  }
+
+  function matchesSearch(doc, term) {
+    if (!term) return true;
+    const haystack = [
+      doc.법령명,
+      ...(Array.isArray(doc.changedArticles) ? doc.changedArticles : []),
+      ...(Array.isArray(doc.articleDiffs) ? doc.articleDiffs.map((d) => d.조문제목) : []),
+    ]
+      .filter(Boolean)
+      .join(" ")
+      .toLowerCase();
+    return haystack.includes(term.toLowerCase());
+  }
+
+  function render() {
+    const filtered = state.docs
+      .filter((doc) => matchesLawTab(doc, state.lawTab))
+      .filter((doc) => matchesStatusFilter(doc, state.statusFilter))
+      .filter((doc) => matchesSearch(doc, state.search))
+      // 시행일이 임박한 순 정렬 (가장 빠른 시행예정일 기준 오름차순)
+      .sort((a, b) => {
+        const da = earliestDate(a.시행예정일) || "9999.99.99";
+        const db_ = earliestDate(b.시행예정일) || "9999.99.99";
+        return da.localeCompare(db_);
+      });
+
+    const grid = document.getElementById("cardGrid");
+    if (filtered.length === 0) {
+      grid.innerHTML = `<div class="empty-state">조건에 맞는 개정 건이 없습니다.</div>`;
+    } else {
+      grid.innerHTML = filtered.map(cardHtmlFor).join("");
+      grid.querySelectorAll("[data-toggle]").forEach((toggle) => {
+        toggle.addEventListener("click", () => {
+          toggle.nextElementSibling.classList.toggle("show");
+        });
+      });
+    }
+
+    const urgentCount = state.docs.filter((doc) => {
+      const dday = computeDday(doc.시행예정일);
+      return dday !== null && dday <= IMMINENT_DAYS;
+    }).length;
+    const badge = document.getElementById("urgentBadge");
+    badge.textContent = `시행임박 ${urgentCount}건`;
+    badge.classList.toggle("show", urgentCount > 0);
+  }
+
+  function renderTabs() {
+    const nav = document.getElementById("lawTabs");
+    const tabs = [{ key: "all", label: "전체보기" }, ...LAW_GROUPS];
+    nav.innerHTML = tabs
+      .map(
+        (tab) =>
+          `<a data-law-tab="${escapeHtml(tab.key)}" class="${tab.key === state.lawTab ? "active" : ""}">${escapeHtml(tab.label)}</a>`
+      )
+      .join("");
+    nav.querySelectorAll("[data-law-tab]").forEach((a) => {
+      a.addEventListener("click", () => {
+        state.lawTab = a.dataset.lawTab;
+        renderTabs();
+        render();
+      });
+    });
+  }
+
+  async function loadDocs() {
+    const statusLine = document.getElementById("statusLine");
+    const refreshBtn = document.getElementById("refreshBtn");
+    const refreshIcon = document.getElementById("refreshIconBtn");
+
+    statusLine.textContent = "Firestore에서 불러오는 중...";
+    statusLine.classList.remove("error");
+    refreshBtn.disabled = true;
+    refreshIcon.classList.add("spinning");
+
+    try {
+      const snapshot = await getDocs(collection(db, COLLECTION_NAME));
+      state.docs = snapshot.docs.map((d) => ({ id: d.id, ...d.data() }));
+      statusLine.textContent = `총 ${state.docs.length}건 (마지막 갱신: ${new Date().toLocaleTimeString("ko-KR")})`;
+      render();
+    } catch (err) {
+      console.error(err);
+      statusLine.textContent = `불러오기 실패: ${err.message} (firebaseConfig 값과 Firestore 보안 규칙을 확인하세요)`;
+      statusLine.classList.add("error");
+    } finally {
+      refreshBtn.disabled = false;
+      refreshIcon.classList.remove("spinning");
+    }
+  }
+
+  document.getElementById("todayLabel").textContent = new Date().toLocaleDateString("ko-KR", {
+    year: "numeric",
+    month: "long",
+    day: "numeric",
+    weekday: "short",
+  });
+
+  document.getElementById("searchInput").addEventListener("input", (e) => {
+    state.search = e.target.value.trim();
+    render();
+  });
+
+  document.querySelectorAll("[data-status-filter]").forEach((chip) => {
+    chip.addEventListener("click", () => {
+      document.querySelectorAll("[data-status-filter]").forEach((c) => c.classList.remove("active"));
+      chip.classList.add("active");
+      state.statusFilter = chip.dataset.statusFilter;
+      render();
+    });
+  });
+
+  // "새로고침"은 파이프라인을 재실행하지 않고 Firestore를 다시 읽기만 한다.
+  // 파이프라인을 지금 바로 실행하려면 GitHub 저장소의 Actions 탭에서 수동 실행한다.
+  document.getElementById("refreshBtn").addEventListener("click", loadDocs);
+  document.getElementById("refreshIconBtn").addEventListener("click", loadDocs);
+
+  renderTabs();
+  loadDocs();
+</script>
+
+</body>
+</html>
