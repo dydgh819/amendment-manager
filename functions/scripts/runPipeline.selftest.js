@@ -21,6 +21,7 @@ const assert = require('node:assert/strict');
 const { runPipeline } = require('../lib/runPipeline');
 
 const LAW_ID = '001766';
+const LAW_NAME = '산업안전보건법';
 const PROCL_NO = '99001';
 const PROCL_DATE = '20260101';
 const EF_YD = '20271231'; // 오늘(테스트 기준일)보다 확실히 미래
@@ -80,21 +81,22 @@ function mockFetch(urlString, init) {
     });
   }
 
-  // law.go.kr 직접 호출
+  // law.go.kr 직접 호출 (eflaw는 ID가 아니라 query=법령명으로 검색된다 —
+  // 실제 API 호출로 확인한 동작을 그대로 흉내낸다)
   const target = url.searchParams.get('target');
-  const id = url.searchParams.get('ID');
+  const query = url.searchParams.get('query');
   const mst = url.searchParams.get('MST');
   const jo = url.searchParams.get('jo');
 
   let data;
   if (target === 'eflaw') {
     data =
-      id === LAW_ID
+      query === LAW_NAME
         ? {
             LawSearch: {
               law: {
                 법령ID: LAW_ID,
-                법령명한글: '산업안전보건법',
+                법령명한글: LAW_NAME,
                 법령일련번호: MST,
                 공포번호: PROCL_NO,
                 공포일자: PROCL_DATE,
