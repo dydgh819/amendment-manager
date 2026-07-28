@@ -155,9 +155,46 @@ STEP 3에서 새로 저장된 개정 건(법령ID + 공포일자)마다 "조문�
 npm run articles:selftest
 ```
 
+**추가로 확인된 리스크**: 조사 중 `korean-law-mcp`의 조문별 개정이력 조회에서, 아직 시행되지 않은
+신설 조문(제31조의2, 시행예정일 2027-01-08)을 조문번호로 직접 조회하면 "조문 개정 이력이 없습니다"가
+나오는 경우를 확인했다. 즉 이 계열의 이력 API가 **이미 시행된 변경만 색인**하고, 아직 시행 전인
+신설 조문은 색인에 없을 수 있다. 실제 OC 키로 STEP 4를 처음 돌릴 때, 신설(본조신설) 조문이
+`changedArticles`에서 빠지는지 반드시 확인하고, 빠진다면 보완 전략(예: 현행 MST와 개정 MST의
+본문을 직접 비교해서 신설 조문을 찾는 방식)이 필요할 수 있다.
+
 전체 파이프라인(STEP 2 탐지 → STEP 3 저장 → STEP 4 변경 조문 추출)을 이어서 실행:
 
 ```bash
 export FIRESTORE_EMULATOR_HOST=127.0.0.1:8080
 node scripts/detectAndSave.js "http://127.0.0.1:5001/<project-id>/asia-northeast3/fetchLawApi"
+```
+
+## STEP 5 — 변경 조문 시행 전/후 본문 조회
+
+STEP 4에서 추출된 `changedArticles`의 조문마다 시행 전(현행) 본문과 시행 후(개정예정) 본문을
+각각 조회해서 `articleDiffs` 필드로 저장한다. `node scripts/detectAndSave.js`가 STEP 2~5를 모두
+이어서 실행한다.
+
+**MST를 두 개 쓴다 (PRD 문구와 다른 부분)**: PRD 원문은 "동일한 MST에 efYd만 붙여서 조회"라고
+되어 있지만, 조사해 보니 실제로는 그렇지 않은 경우가 있었다 — 산업안전보건법 2026-02-19 공포
+건(공포번호 21374)은 현재 시행 중인 MST(287805)가 아니라 별도 MST(283449)로 시행예정본을
+조회해야 했다(`korean-law-mcp`로 실측). 그래서:
+- **현행본**: `functions/lib/getCurrentMst.js`로 법령ID의 현재 MST를 따로 조회 (`target=law`, jo 없음)
+- **개정본**: STEP 2/3에서 이미 저장해 둔 그 개정 건 고유의 MST(`법령일련번호`, eflaw 응답에서 추출) + efYd
+
+이 때문에 STEP 2(`detectPendingAmendments.js`)와 STEP 3(`savePendingAmendments.js`)도 함께
+수정해서 MST를 추출·저장하도록 보완했다.
+
+**알려진 단순화**: 같은 개정 건(공포번호)에 시행예정일이 여러 개면(부칙상 조문별로 시행일이 다른
+경우) 가장 빠른 날짜 하나만 모든 변경 조문에 적용한다. 조문마다 정확한 개별 시행일을 매핑하려면
+STEP 4의 조문별 개정이력에서 조문시행일까지 함께 가져와야 하는데, 이번 단계 범위를 벗어나
+단순화했다 — 실제 사용 시 이 부분이 정확도에 영향을 줄 수 있음을 유의해야 한다.
+
+조문 본문 API의 응답 필드명(`조문제목`, `조문내용` 등)도 STEP 4와 마찬가지로 확정되지 않아
+`pick()` 후보 목록으로 방어했다. 자체 테스트는 실제 본문 텍스트 대신 "올바른 MST·efYd 조합으로
+호출되는지"(라우팅)와 Firestore 연동(MST 캐싱, efYd 선택, changedArticles가 빈 건 스킵)을 검증한다:
+
+```bash
+npm run diffs:selftest
+npm run diffs-update:selftest
 ```

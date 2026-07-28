@@ -38,6 +38,15 @@ function formatArticleNumber(rawJo) {
   return branch > 0 ? `제${article}조의${branch}` : `제${article}조`;
 }
 
+// "제31조의2" -> "003102", "제38조" -> "003800"
+function parseArticleNumber(label) {
+  const m = String(label).match(/^제(\d+)조(?:의(\d+))?$/);
+  if (!m) return undefined;
+  const article = String(m[1]).padStart(4, '0');
+  const branch = String(m[2] || 0).padStart(2, '0');
+  return `${article}${branch}`;
+}
+
 function normalizeEntry(entry) {
   const combinedJo = pick(entry, ['조문번호통합', 'jo']);
   const articleOnly = pick(entry, ['조문번호']);
@@ -113,6 +122,7 @@ async function getChangedArticles({ baseUrl, lawId, mst, proclDate, logRaw = fal
 module.exports = {
   getChangedArticles,
   formatArticleNumber,
+  parseArticleNumber,
   sortArticleNumbers,
   ARTICLE_HISTORY_TARGET,
 };

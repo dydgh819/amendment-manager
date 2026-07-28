@@ -18,6 +18,7 @@ function groupByAmendmentCase(flatResults) {
         docId,
         법령ID: row.법령ID,
         법령명: row.법령명,
+        MST: row.MST, // 같은 공포번호면 eflaw MST도 동일 — STEP 5 시행예정본 조회에 사용
         공포번호: row.공포번호,
         공포일: row.공포일,
         시행예정일세트: new Set(),

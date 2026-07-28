@@ -5,6 +5,7 @@ const admin = require('firebase-admin');
 const { detectPendingAmendments } = require('../lib/detectPendingAmendments');
 const { savePendingAmendments } = require('../lib/savePendingAmendments');
 const { updateChangedArticles } = require('../lib/updateChangedArticles');
+const { updateArticleDiffs } = require('../lib/updateArticleDiffs');
 
 // 사용법:
 //   node scripts/detectAndSave.js "<fetchLawApi URL>"
@@ -51,6 +52,27 @@ async function main() {
       changedArticles: r.changedArticles ? r.changedArticles.join(', ') : `(실패: ${r.error})`,
     }))
   );
+
+  const docIdsWithArticles = articleResults
+    .filter((r) => r.changedArticles && r.changedArticles.length > 0)
+    .map((r) => r.docId);
+
+  if (docIdsWithArticles.length === 0) {
+    return;
+  }
+
+  console.log('\n변경 조문의 시행 전/후 본문을 조회합니다...\n');
+  const diffResults = await updateArticleDiffs(db, baseUrl, docIdsWithArticles);
+
+  console.log('\n=== 조문별 시행 전/후 본문 조회 결과 (articleDiffs 필드로 저장됨) ===');
+  for (const r of diffResults) {
+    if (r.error) {
+      console.log(`- ${r.docId}: 실패 (${r.error})`);
+      continue;
+    }
+    console.log(`- ${r.docId}: ${r.articleDiffs.length}개 조문`);
+    console.table(r.articleDiffs);
+  }
 }
 
 main().catch((err) => {

@@ -31,6 +31,7 @@ function normalizeEntry(entry, fallbackLawId, fallbackName) {
   return {
     법령ID: pick(entry, ['법령ID', 'lawId', 'LSID']) || fallbackLawId,
     법령명: pick(entry, ['법령명한글', '법령명', 'lawName']) || fallbackName,
+    MST: pick(entry, ['법령일련번호', 'MST', 'lawSerialNo']),
     공포번호: pick(entry, ['공포번호', 'proclNo']),
     공포일자: pick(entry, ['공포일자', 'proclDate']), // YYYYMMDD 원본
     시행일자: pick(entry, ['시행일자', 'efYd']), // YYYYMMDD 원본
@@ -57,7 +58,7 @@ function todayYmd(date = new Date()) {
  * @param {string} options.baseUrl fetchLawApi 엔드포인트 URL (필수)
  * @param {string} [options.today] 기준일 YYYYMMDD (기본: 실행 시점 오늘)
  * @param {boolean} [options.logRaw] 첫 번째 응답의 원본 구조를 콘솔에 출력할지 여부
- * @returns {Promise<Array<{법령ID, 법령명, 공포번호, 공포일, 시행예정일}>>}
+ * @returns {Promise<Array<{법령ID, 법령명, MST, 공포번호, 공포일, 시행예정일}>>}
  */
 async function detectPendingAmendments({ baseUrl, today = todayYmd(), logRaw = false } = {}) {
   if (!baseUrl) {
@@ -91,6 +92,7 @@ async function detectPendingAmendments({ baseUrl, today = todayYmd(), logRaw = f
         results.push({
           법령ID: entry.법령ID,
           법령명: entry.법령명,
+          MST: entry.MST, // 이 개정 건(공포번호)의 eflaw MST — STEP 5의 시행예정본 조회에 사용
           공포번호: entry.공포번호,
           공포일: formatYmd(entry.공포일자),
           시행예정일: formatYmd(entry.시행일자),
