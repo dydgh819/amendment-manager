@@ -26,7 +26,10 @@ async function runPipeline({ db }) {
   try {
     let flatResults;
     try {
-      flatResults = await detectPendingAmendments({});
+      // logRaw:true로 최초 성공 응답의 원본 구조를 배치 로그(콘솔)에 남긴다 —
+      // 0건 감지가 "실제로 대상이 없어서"인지 "OC 키/필드명 문제로 파싱이
+      // 안 돼서"인지 구분할 유일한 방법이라 항상 켜 둔다. 로그는 실행당 1회뿐.
+      flatResults = await detectPendingAmendments({ logRaw: true });
       log.단계.탐지 = { 성공: true, 행수: flatResults.length };
     } catch (err) {
       log.단계.탐지 = { 성공: false, error: err.message };
