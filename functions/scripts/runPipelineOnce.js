@@ -3,7 +3,8 @@
 
 require('dotenv').config();
 
-const admin = require('firebase-admin');
+const { getApps, initializeApp, cert } = require('firebase-admin/app');
+const { getFirestore } = require('firebase-admin/firestore');
 const { runPipeline } = require('../lib/runPipeline');
 
 // GitHub Actions(스케줄 cron 또는 수동 workflow_dispatch)에서 실행되는 진입점.
@@ -22,18 +23,16 @@ async function main() {
     return;
   }
 
-  if (!admin.apps.length) {
+  if (getApps().length === 0) {
     const serviceAccountJson = process.env.FIREBASE_SERVICE_ACCOUNT_KEY;
     if (serviceAccountJson) {
-      admin.initializeApp({
-        credential: admin.credential.cert(JSON.parse(serviceAccountJson)),
-      });
+      initializeApp({ credential: cert(JSON.parse(serviceAccountJson)) });
     } else {
-      admin.initializeApp();
+      initializeApp();
     }
   }
 
-  const db = admin.firestore();
+  const db = getFirestore();
   const log = await runPipeline({ db });
 
   console.log('\n=== 파이프라인 실행 결과 ===');
