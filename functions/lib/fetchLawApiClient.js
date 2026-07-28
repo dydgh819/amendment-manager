@@ -55,7 +55,16 @@ async function callFetchLawApi(params) {
 
   const upstreamUrl = buildUpstreamUrl(baseUrl, { OC: ocKey, target, type: 'XML', ...rest });
 
-  const response = await fetchWithTimeout(upstreamUrl, REQUEST_TIMEOUT_MS);
+  let response;
+  try {
+    response = await fetchWithTimeout(upstreamUrl, REQUEST_TIMEOUT_MS);
+  } catch (err) {
+    // fetch가 던지는 "fetch failed"는 원인(DNS/연결거부/타임아웃 등)을 err.cause에
+    // 숨기고 있어서, 실제 원인을 알 수 있도록 그대로 노출한다 (네트워크 차단
+    // 여부를 진단하는 데 필요).
+    const cause = err.cause ? ` — 원인: ${err.cause.code || err.cause.message || err.cause}` : '';
+    throw new Error(`law.go.kr 연결 실패 (${err.message})${cause}`);
+  }
   const bodyText = await response.text();
 
   if (!response.ok) {
