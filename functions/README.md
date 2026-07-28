@@ -94,7 +94,8 @@ FETCH_LAW_API_URL="https://<region>-<project-id>.cloudfunctions.net/fetchLawApi"
 ```
 
 실제 네트워크/OC 키 없이 파싱·필터링 로직만 검증하려면 목업 응답을 쓰는 자체 테스트를 실행한다.
-PRD 부록의 "현재(2026-07-26 기준) 감지된 시행예정 개정 5건"이 그대로 검출되는지 검증한다:
+PRD 부록의 "현재(2026-07-26 기준) 감지된 시행예정 개정 5건"이 그대로 검출되는지 검증한다
+(산업안전보건법 21374건은 부칙상 시행일자가 2개라 행으로는 6개가 나온다):
 
 ```bash
 npm run detect:selftest
@@ -105,3 +106,32 @@ npm run detect:selftest
 실제 배포 환경에서 처음 실행할 때는 `logRaw` 옵션(스크립트 실행 시 기본 활성화)으로 원본 응답 구조가
 콘솔에 함께 출력되므로, 필드명이 다르면 `functions/lib/detectPendingAmendments.js`의 후보 목록을
 바로 확인해 보정할 수 있다.
+
+## STEP 3 — Firestore 저장 + 중복 방지
+
+STEP 2의 탐지 결과(행 단위, 시행일자가 여러 개면 같은 공포번호가 여러 행으로 나뉨)를
+`pendingAmendments` 컬렉션에 저장한다. 저장 전에 `법령ID_공포번호`를 문서 ID로 삼아
+다시 묶어서, 같은 개정 건은 문서 하나가 되도록 하고(시행예정일은 배열로 병합),
+이미 존재하는 문서는 건드리지 않고 스킵한다(중복 알림 방지).
+
+저장 필드: `법령ID`, `법령명`, `공포번호`, `공포일`, `시행예정일`(배열), `감지일시`(서버 타임스탬프),
+`처리상태`(신규 저장 시 `pending`).
+
+```bash
+# 에뮬레이터: 별도 터미널에서 Firestore 에뮬레이터를 띄운 뒤
+export FIRESTORE_EMULATOR_HOST=127.0.0.1:8080
+node scripts/detectAndSave.js "http://127.0.0.1:5001/<project-id>/asia-northeast3/fetchLawApi"
+
+# 실 프로젝트: 서비스 계정 키로 인증
+export GOOGLE_APPLICATION_CREDENTIALS=/path/to/service-account.json
+FETCH_LAW_API_URL="https://<region>-<project-id>.cloudfunctions.net/fetchLawApi" npm run detect-and-save
+```
+
+Firestore 없이 그룹핑·중복 방지 로직만 검증하려면(메모리 기반 가짜 Firestore 사용):
+
+```bash
+npm run save:selftest
+```
+
+이 자체 테스트는 6행짜리 목업 결과를 넣었을 때 정확히 5개 문서로 묶이는지, 재실행 시 기존
+5건이 스킵되는지, 새 개정 건이 섞였을 때 그 1건만 추가로 저장되는지를 확인한다.

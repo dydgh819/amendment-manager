@@ -11,7 +11,9 @@
     "deploy": "firebase deploy --only functions",
     "logs": "firebase functions:log",
     "detect": "node scripts/detectPendingAmendments.js",
-    "detect:selftest": "node scripts/detectPendingAmendments.selftest.js"
+    "detect:selftest": "node scripts/detectPendingAmendments.selftest.js",
+    "detect-and-save": "node scripts/detectAndSave.js",
+    "save:selftest": "node scripts/savePendingAmendments.selftest.js"
   },
   "dependencies": {
     "fast-xml-parser": "^5.10.1",
