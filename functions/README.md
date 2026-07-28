@@ -239,3 +239,45 @@ node scripts/detectAndSave.js "http://127.0.0.1:5001/<project-id>/asia-northeast
 npm run summarize:selftest
 npm run summarize-update:selftest
 ```
+
+## STEP 7 — 스케줄 함수로 전체 파이프라인 자동화
+
+`functions/index.js`의 `runAmendmentPipeline`이 STEP 2~6(탐지 → 저장 → 변경조문 추출 →
+본문조회 → 요약)을 매일 자동으로 실행하는 Firebase Scheduled Function이다. 실제 오케스트레이션
+로직은 `functions/lib/runPipeline.js`에 있고, 실행할 때마다 결과를 `batchLogs` 컬렉션에 기록한다.
+
+**실행 주기**: 기본값은 매일 새벽 3시(KST, `schedule: '0 3 * * *'`, `timeZone: 'Asia/Seoul'`).
+`functions/index.js`의 `runAmendmentPipeline` 옵션에 있는 `schedule` 값만 바꾸면 주기를 조정할
+수 있다 (바로 위에 6시간마다/매주 등 예시 cron을 주석으로 남겨 뒀다).
+
+**어떻게 fetchLawApi를 호출하나**: 스케줄 함수가 직접 law.go.kr을 호출하지 않고, STEP 1의
+`fetchLawApi`를 그대로 HTTP로 호출한다 (같은 프로젝트/리전이라 `https://asia-northeast3-<project-id>.cloudfunctions.net/fetchLawApi` 형태로 URL을 구성한다). 이렇게 하면 OC 키 은닉·CORS·에러
+처리 로직을 fetchLawApi 하나에만 두고, 이 스케줄 함수와 STEP 2~6의 CLI 스크립트(`detectAndSave.js`)가
+모두 재사용할 수 있다.
+
+**실패 처리**: 법령/개정 건/조문 단위의 실패는 이미 각 STEP의 lib 모듈 안에서 try-catch로 처리되어
+있어 한 건이 실패해도 나머지 건 처리는 계속된다(예: 15개 법령 중 하나가 조회 실패해도 나머지
+14개는 계속 조회). `runPipeline`은 그 위에서 "단계 자체"가 통째로 실패하는 경우까지 잡아서, 무슨
+일이 있어도 `batchLogs`에 시작/종료 시각과 단계별 성공·실패 건수를 남긴다.
+
+**Secret Manager**: 배포 전에 `LAW_OC`(fetchLawApi용)와 `GEMINI_API_KEY`(요약용, 아직 안 쓰더라도
+임시 값으로 등록 필요)를 모두 등록해야 한다:
+
+```bash
+firebase functions:secrets:set LAW_OC
+firebase functions:secrets:set GEMINI_API_KEY
+firebase deploy --only functions
+```
+
+로컬에서 오케스트레이션 로직만 검증하려면(가짜 Firestore + 가짜 fetch로 정상 경로와, `baseUrl`이
+없어 탐지 단계 자체가 실패하는 경로 둘 다 확인):
+
+```bash
+npm run pipeline:selftest
+```
+
+지금까지의 모든 자체 테스트를 한 번에 실행:
+
+```bash
+npm run selftest
+```

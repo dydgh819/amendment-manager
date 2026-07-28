@@ -18,7 +18,9 @@
     "diffs:selftest": "node scripts/getArticleDiffs.selftest.js",
     "diffs-update:selftest": "node scripts/updateArticleDiffs.selftest.js",
     "summarize:selftest": "node scripts/summarizeArticleImpact.selftest.js",
-    "summarize-update:selftest": "node scripts/updateSummaries.selftest.js"
+    "summarize-update:selftest": "node scripts/updateSummaries.selftest.js",
+    "pipeline:selftest": "node scripts/runPipeline.selftest.js",
+    "selftest": "npm run detect:selftest && npm run save:selftest && npm run articles:selftest && npm run diffs:selftest && npm run diffs-update:selftest && npm run summarize:selftest && npm run summarize-update:selftest && npm run pipeline:selftest"
   },
   "dependencies": {
     "fast-xml-parser": "^5.10.1",
