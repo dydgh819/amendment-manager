@@ -17,12 +17,13 @@ const assert = require('node:assert/strict');
 const { detectPendingAmendments } = require('../lib/detectPendingAmendments');
 const { TARGET_LAWS } = require('../lib/lawIds');
 
-// lawId별 eflaw 목업 XML. 시행령/시행규칙 등 나머지 10개 법령은 시행대기 건이
-// 없는 것으로 응답하도록 빈 목록을 준다.
+// eflaw는 법령ID로 직접 필터링을 못 하고 법령명(query)으로만 검색된다는 걸
+// 실제 GitHub Actions 실행으로 확인했다 (ID 파라미터를 보내면 조용히 무시되고
+// query=* 기본 검색으로 빠져버림). 그래서 목업도 법령명 기준으로 준다.
 // 법령일련번호(MST)는 korean-law-mcp로 실제 확인한 값을 그대로 사용한다.
 const MOCK_EFLAW_XML = {
-  '001766': `<LawSearch>
-    <totalCnt>3</totalCnt>
+  '산업안전보건법': `<LawSearch>
+    <totalCnt>5</totalCnt>
     <law>
       <법령ID>001766</법령ID>
       <법령명한글>산업안전보건법</법령명한글>
@@ -55,8 +56,16 @@ const MOCK_EFLAW_XML = {
       <공포일자>20260407</공포일자>
       <시행일자>20261208</시행일자>
     </law>
+    <law>
+      <법령ID>003786</법령ID>
+      <법령명한글>산업안전보건법 시행령</법령명한글>
+      <법령일련번호>999999</법령일련번호>
+      <공포번호>99999</공포번호>
+      <공포일자>20260101</공포일자>
+      <시행일자>20271231</시행일자>
+    </law>
   </LawSearch>`,
-  '001849': `<LawSearch>
+  '액화석유가스의 안전관리 및 사업법': `<LawSearch>
     <totalCnt>1</totalCnt>
     <law>
       <법령ID>001849</법령ID>
@@ -67,7 +76,7 @@ const MOCK_EFLAW_XML = {
       <시행일자>20261231</시행일자>
     </law>
   </LawSearch>`,
-  '001851': `<LawSearch>
+  '도시가스사업법': `<LawSearch>
     <totalCnt>1</totalCnt>
     <law>
       <법령ID>001851</법령ID>
@@ -82,8 +91,8 @@ const MOCK_EFLAW_XML = {
 
 // PRD 부록 시나리오 기준 "이미 시행된" 과거 개정 건도 하나 섞어서
 // (시행일자가 오늘 이전) 필터에서 제대로 걸러지는지 함께 검증한다.
-const MOCK_PAST_ENTRY_LAW_ID = '007364';
-MOCK_EFLAW_XML[MOCK_PAST_ENTRY_LAW_ID] = `<LawSearch>
+const MOCK_PAST_ENTRY_LAW_NAME = '산업안전보건법 시행규칙';
+MOCK_EFLAW_XML[MOCK_PAST_ENTRY_LAW_NAME] = `<LawSearch>
   <totalCnt>1</totalCnt>
   <law>
     <법령ID>007364</법령ID>
@@ -96,8 +105,8 @@ MOCK_EFLAW_XML[MOCK_PAST_ENTRY_LAW_ID] = `<LawSearch>
 
 const EMPTY_EFLAW_XML = `<LawSearch><totalCnt>0</totalCnt></LawSearch>`;
 
-function xmlToFakeUpstreamText(lawId) {
-  return MOCK_EFLAW_XML[lawId] || EMPTY_EFLAW_XML;
+function xmlToFakeUpstreamText(query) {
+  return MOCK_EFLAW_XML[query] || EMPTY_EFLAW_XML;
 }
 
 // law.go.kr을 직접 호출하는 구조이므로, fetch가 반환하는 XML 원문 텍스트를
@@ -106,8 +115,8 @@ process.env.LAW_OC = 'fake-oc-for-test';
 
 global.fetch = async (urlString) => {
   const url = new URL(urlString);
-  const lawId = url.searchParams.get('ID');
-  const xml = xmlToFakeUpstreamText(lawId);
+  const query = url.searchParams.get('query');
+  const xml = xmlToFakeUpstreamText(query);
   return {
     ok: true,
     status: 200,
@@ -128,8 +137,16 @@ async function main() {
 
   // 2) 과거에 이미 시행된 건(007364, 20240101)은 결과에 없어야 한다
   assert.ok(
-    !results.some((r) => r.법령ID === MOCK_PAST_ENTRY_LAW_ID),
+    !results.some((r) => r.법령ID === '007364'),
     '이미 시행된 과거 건이 필터링되지 않고 포함됨'
+  );
+
+  // 2-1) query 부분일치로 섞여 들어온 다른 법령ID(003786, 시행령)는 법령ID
+  //      정확 매칭 필터로 걸러져야 한다 — 실제 API가 ID 파라미터를 무시하고
+  //      법령명으로만 검색하는 것을 확인한 뒤 추가한 회귀 방지 테스트.
+  assert.ok(
+    !results.some((r) => r.법령ID === '003786'),
+    '법령명 부분일치로 섞여 들어온 다른 법령ID가 걸러지지 않고 포함됨'
   );
 
   // 3) PRD 부록의 5건(산업안전보건법 3건 + LPG법 1건 + 도시가스법 1건) 대응 확인

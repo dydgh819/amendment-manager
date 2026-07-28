@@ -65,10 +65,16 @@ async function detectPendingAmendments({ today = todayYmd(), logRaw = false } = 
 
   for (const { lawId, name } of TARGET_LAWS) {
     try {
+      // eflaw는 법령ID로 직접 필터링하는 파라미터를 지원하지 않는다 — ID를 보내면
+      // 조용히 무시되고 기본 검색(query=*, section=lawNm)으로 빠져 버려서
+      // 항상 무관한 결과만 받게 된다는 걸 실제 호출로 확인했다. 법령명(query)으로
+      // 검색한 뒤, 부분일치로 섞여 들어올 수 있는 시행령/시행규칙 등 다른 법령을
+      // 걸러내기 위해 법령ID로 다시 한 번 확인한다.
       const rawData = await callFetchLawApi({
         endpoint: 'lawSearch',
         target: 'eflaw',
-        ID: lawId,
+        query: name,
+        display: '100',
       });
 
       if (logRaw && !loggedSample) {
@@ -77,9 +83,9 @@ async function detectPendingAmendments({ today = todayYmd(), logRaw = false } = 
         loggedSample = true;
       }
 
-      const entries = extractEflawEntries(rawData).map((entry) =>
-        normalizeEntry(entry, lawId, name)
-      );
+      const entries = extractEflawEntries(rawData)
+        .map((entry) => normalizeEntry(entry, lawId, name))
+        .filter((entry) => entry.법령ID === lawId);
 
       const pending = entries.filter((entry) => entry.시행일자 && entry.시행일자 > today);
 
