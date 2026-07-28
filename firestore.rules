@@ -1,0 +1,18 @@
+rules_version = '2';
+
+// public/index.html 대시보드가 인증 없이 브라우저에서 Firestore를 직접 읽는다.
+// 쓰기는 GitHub Actions의 서비스 계정(Admin SDK)만 하며, Admin SDK는 이 규칙을
+// 우회하므로 여기서 write를 막아도 파이프라인 동작에는 영향이 없다.
+//
+// 적용 방법: Firebase 콘솔 → Firestore Database → 규칙 탭에 이 내용을 붙여넣고 게시.
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /pendingAmendments/{docId} {
+      allow read: if true;
+      allow write: if false;
+    }
+    match /batchLogs/{docId} {
+      allow read, write: if false;
+    }
+  }
+}
