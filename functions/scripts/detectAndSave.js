@@ -3,7 +3,8 @@
 
 require('dotenv').config();
 
-const admin = require('firebase-admin');
+const { initializeApp } = require('firebase-admin/app');
+const { getFirestore } = require('firebase-admin/firestore');
 const { detectPendingAmendments } = require('../lib/detectPendingAmendments');
 const { savePendingAmendments } = require('../lib/savePendingAmendments');
 const { updateChangedArticles } = require('../lib/updateChangedArticles');
@@ -27,8 +28,8 @@ async function main() {
     return;
   }
 
-  admin.initializeApp();
-  const db = admin.firestore();
+  initializeApp();
+  const db = getFirestore();
 
   console.log('15개 감시 대상 법령에 대해 eflaw 조회를 시작합니다...\n');
 
