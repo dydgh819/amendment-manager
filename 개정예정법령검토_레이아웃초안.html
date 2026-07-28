@@ -1,0 +1,458 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>한화솔루션 개정 예정 법령 검토</title>
+<style>
+  :root{
+    --bg:#f5f6f7;
+    --header-bg:#171717;
+    --accent:#e8542c;
+    --accent-dark:#c8431f;
+    --text-main:#1a1a1a;
+    --text-sub:#6b7280;
+    --border:#e5e7eb;
+    --card-bg:#ffffff;
+    --pill-law:#fde8e2;
+    --pill-law-text:#c8431f;
+    --pill-decree:#e2f0fd;
+    --pill-decree-text:#1d6fb8;
+    --pill-rule:#eaf7e9;
+    --pill-rule-text:#2e8b3d;
+    --status-pending-bg:#fef3e2;
+    --status-pending-text:#b6740a;
+    --status-done-bg:#e9f8ec;
+    --status-done-text:#238a3f;
+  }
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{
+    font-family:"Pretendard","Apple SD Gothic Neo",-apple-system,BlinkMacSystemFont,"Malgun Gothic",sans-serif;
+    background:var(--bg);
+    color:var(--text-main);
+    font-size:14px;
+  }
+
+  /* 상단 헤더 */
+  header.topbar{
+    background:var(--header-bg);
+    color:#fff;
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    padding:14px 28px;
+  }
+  .topbar-left{display:flex;align-items:center;gap:12px;}
+  .logo-mark{
+    width:34px;height:34px;border-radius:8px;
+    background:var(--accent);
+    display:flex;align-items:center;justify-content:center;
+    font-weight:700;
+  }
+  .topbar-title{font-size:16px;font-weight:700;letter-spacing:-0.2px;}
+  .topbar-right{display:flex;align-items:center;gap:14px;font-size:13px;color:#d1d5db;}
+  .badge-urgent{
+    background:var(--accent);
+    color:#fff;
+    padding:6px 12px;
+    border-radius:6px;
+    font-weight:700;
+    font-size:13px;
+  }
+  .icon-btn{
+    width:30px;height:30px;border-radius:6px;
+    background:#2a2a2a;
+    display:flex;align-items:center;justify-content:center;
+    color:#d1d5db;font-size:13px;
+  }
+
+  /* 탭 네비게이션 */
+  nav.tabs{
+    background:#fff;
+    border-bottom:1px solid var(--border);
+    display:flex;
+    gap:28px;
+    padding:0 28px;
+    overflow-x:auto;
+    white-space:nowrap;
+  }
+  nav.tabs a{
+    display:inline-block;
+    padding:14px 2px;
+    color:var(--text-sub);
+    text-decoration:none;
+    font-size:14px;
+    font-weight:500;
+    border-bottom:2px solid transparent;
+  }
+  nav.tabs a.active{
+    color:var(--text-main);
+    font-weight:700;
+    border-bottom:2px solid var(--accent);
+  }
+
+  /* 필터 바 */
+  .filter-bar{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    padding:18px 28px 4px 28px;
+  }
+  .filter-left{display:flex;align-items:center;gap:8px;}
+  .search-input{
+    width:260px;
+    padding:9px 12px;
+    border:1px solid var(--border);
+    border-radius:6px;
+    font-size:13px;
+    background:#fff;
+  }
+  .chip{
+    padding:8px 16px;
+    border-radius:6px;
+    border:1px solid var(--border);
+    background:#fff;
+    color:var(--text-sub);
+    font-size:13px;
+    font-weight:500;
+    cursor:pointer;
+  }
+  .chip.active{
+    background:var(--accent);
+    border-color:var(--accent);
+    color:#fff;
+  }
+  .filter-right{display:flex;gap:8px;}
+  .btn-primary{
+    padding:9px 16px;
+    border-radius:6px;
+    border:none;
+    background:var(--accent);
+    color:#fff;
+    font-size:13px;
+    font-weight:600;
+    cursor:pointer;
+  }
+  .btn-primary:hover{background:var(--accent-dark);}
+
+  /* 카드 그리드 */
+  main{padding:20px 28px 60px 28px;}
+  .card-grid{
+    display:grid;
+    grid-template-columns:repeat(auto-fill, minmax(360px, 1fr));
+    gap:16px;
+  }
+  .card{
+    background:var(--card-bg);
+    border:1px solid var(--border);
+    border-radius:10px;
+    padding:18px;
+  }
+  .card-top{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    margin-bottom:10px;
+  }
+  .pill{
+    display:inline-block;
+    padding:3px 10px;
+    border-radius:5px;
+    font-size:12px;
+    font-weight:700;
+  }
+  .pill-law{background:var(--pill-law);color:var(--pill-law-text);}
+  .pill-decree{background:var(--pill-decree);color:var(--pill-decree-text);}
+  .pill-rule{background:var(--pill-rule);color:var(--pill-rule-text);}
+
+  .status{
+    padding:3px 10px;
+    border-radius:5px;
+    font-size:12px;
+    font-weight:700;
+  }
+  .status-pending{background:var(--status-pending-bg);color:var(--status-pending-text);}
+  .status-done{background:var(--status-done-bg);color:var(--status-done-text);}
+
+  .card-title{
+    font-size:15px;
+    font-weight:700;
+    margin-bottom:4px;
+  }
+  .card-article{
+    font-size:13px;
+    color:var(--text-sub);
+    margin-bottom:12px;
+  }
+  .card-dates{
+    display:flex;
+    gap:16px;
+    font-size:12px;
+    color:var(--text-sub);
+    margin-bottom:12px;
+    padding-bottom:12px;
+    border-bottom:1px dashed var(--border);
+  }
+  .card-dates strong{color:var(--text-main);font-weight:600;}
+  .dday{
+    margin-left:auto;
+    color:var(--accent-dark);
+    font-weight:700;
+  }
+
+  .card-summary{
+    font-size:13px;
+    line-height:1.6;
+    color:var(--text-main);
+    margin-bottom:14px;
+  }
+
+  .card-toggle{
+    font-size:12px;
+    color:var(--accent-dark);
+    font-weight:600;
+    cursor:pointer;
+    display:flex;
+    align-items:center;
+    gap:4px;
+    margin-bottom:10px;
+  }
+
+  .diff-box{
+    display:none;
+    background:#fafafa;
+    border:1px solid var(--border);
+    border-radius:6px;
+    padding:12px;
+    margin-bottom:10px;
+    font-size:12px;
+    line-height:1.6;
+  }
+  .diff-box.show{display:block;}
+  .diff-row{display:flex;gap:10px;margin-bottom:8px;}
+  .diff-label{
+    flex:0 0 54px;
+    font-weight:700;
+    color:var(--text-sub);
+  }
+  .diff-old{color:#9ca3af;text-decoration:line-through;}
+  .diff-new{color:var(--accent-dark);font-weight:600;}
+
+  .card-actions{
+    display:flex;
+    gap:6px;
+    justify-content:flex-end;
+  }
+  .btn-mini{
+    padding:6px 12px;
+    border-radius:5px;
+    border:1px solid var(--accent);
+    background:#fff;
+    color:var(--accent-dark);
+    font-size:12px;
+    font-weight:600;
+    cursor:pointer;
+  }
+  .btn-mini.filled{
+    background:var(--accent);
+    color:#fff;
+    border-color:var(--accent);
+  }
+</style>
+</head>
+<body>
+
+<header class="topbar">
+  <div class="topbar-left">
+    <div class="logo-mark">한</div>
+    <div class="topbar-title">한화솔루션 개정 예정 법령 검토</div>
+  </div>
+  <div class="topbar-right">
+    <span>2026년 7월 28일 (화)</span>
+    <span class="badge-urgent">시행임박 2건</span>
+    <div class="icon-btn">⟳</div>
+  </div>
+</header>
+
+<nav class="tabs">
+  <a href="#" class="active">전체보기</a>
+  <a href="#">산업안전보건법</a>
+  <a href="#">고압가스안전관리법</a>
+  <a href="#">액화석유가스안전관리 및 사업법</a>
+  <a href="#">에너지이용합리화법</a>
+  <a href="#">도시가스사업법</a>
+  <a href="#">처리 이력</a>
+</nav>
+
+<div class="filter-bar">
+  <div class="filter-left">
+    <input class="search-input" type="text" placeholder="법령명·조문 검색">
+    <div class="chip active">전체</div>
+    <div class="chip">시행임박</div>
+    <div class="chip">요약완료</div>
+    <div class="chip">처리대기</div>
+  </div>
+  <div class="filter-right">
+    <button class="btn-primary" style="background:#fff;color:#1a1a1a;border:1px solid var(--border);">배치 로그 보기</button>
+    <button class="btn-primary">지금 새로고침</button>
+  </div>
+</div>
+
+<main>
+  <div class="card-grid">
+
+    <!-- 카드 1 -->
+    <div class="card">
+      <div class="card-top">
+        <span class="pill pill-law">법률</span>
+        <span class="status status-done">요약완료</span>
+      </div>
+      <div class="card-title">산업안전보건법</div>
+      <div class="card-article">제110조 (물질안전보건자료의 작성·제출) 외 1개 조문</div>
+      <div class="card-dates">
+        <div>공포일 <strong>2026.02.19</strong></div>
+        <div>시행예정 <strong>2026.08.01</strong></div>
+        <div class="dday">D-4</div>
+      </div>
+      <div class="card-summary">
+        MSDS 제출 대상 물질 범위가 확대되어, 8월 1일부터 신규 취급 화학물질에 대한 자료 제출 절차 재점검이 필요합니다. 구매부서 등록 프로세스와의 연동 확인 필요.
+      </div>
+      <div class="card-toggle" onclick="this.nextElementSibling.classList.toggle('show')">▸ 현행 / 개정 조문 비교 보기</div>
+      <div class="diff-box">
+        <div class="diff-row">
+          <div class="diff-label">현행</div>
+          <div class="diff-old">(더미) 사업주는 물질안전보건자료를 작성하여 고용노동부장관에게 제출하여야 한다...</div>
+        </div>
+        <div class="diff-row">
+          <div class="diff-label">개정</div>
+          <div class="diff-new">(더미) 사업주는 물질안전보건자료를 작성하여 고용노동부장관에게 제출하여야 하며, 제출 대상 물질의 범위는...</div>
+        </div>
+      </div>
+      <div class="card-actions">
+        <button class="btn-mini">원문 링크</button>
+        <button class="btn-mini filled">담당자 배정</button>
+      </div>
+    </div>
+
+    <!-- 카드 2 -->
+    <div class="card">
+      <div class="card-top">
+        <span class="pill pill-law">법률</span>
+        <span class="status status-pending">처리대기</span>
+      </div>
+      <div class="card-title">산업안전보건법</div>
+      <div class="card-article">제38조 (안전조치) 외 2개 조문</div>
+      <div class="card-dates">
+        <div>공포일 <strong>2026.07.07</strong></div>
+        <div>시행예정 <strong>2027.01.08</strong></div>
+        <div class="dday" style="color:var(--text-sub);">D-164</div>
+      </div>
+      <div class="card-summary" style="color:var(--text-sub);">
+        요약 생성 대기 중입니다. 변경 조문 추출까지만 완료된 상태입니다.
+      </div>
+      <div class="card-toggle" onclick="this.nextElementSibling.classList.toggle('show')">▸ 현행 / 개정 조문 비교 보기</div>
+      <div class="diff-box">
+        <div class="diff-row">
+          <div class="diff-label">현행</div>
+          <div class="diff-old">(더미) 조문 원문 대기 중...</div>
+        </div>
+      </div>
+      <div class="card-actions">
+        <button class="btn-mini">원문 링크</button>
+        <button class="btn-mini filled">요약 다시 생성</button>
+      </div>
+    </div>
+
+    <!-- 카드 3 -->
+    <div class="card">
+      <div class="card-top">
+        <span class="pill pill-decree">시행령</span>
+        <span class="status status-done">요약완료</span>
+      </div>
+      <div class="card-title">액화석유가스의 안전관리 및 사업법</div>
+      <div class="card-article">제12조 (충전사업자의 안전관리) 외 1개 조문</div>
+      <div class="card-dates">
+        <div>공포일 <strong>2025.12.30</strong></div>
+        <div>시행예정 <strong>2026.12.31</strong></div>
+        <div class="dday" style="color:var(--text-sub);">D-156</div>
+      </div>
+      <div class="card-summary">
+        저장시설 안전관리자 배치 기준이 강화됩니다. 울산 1공장 LPG 저장설비 담당자 배치 현황 사전 점검 권장.
+      </div>
+      <div class="card-toggle" onclick="this.nextElementSibling.classList.toggle('show')">▸ 현행 / 개정 조문 비교 보기</div>
+      <div class="diff-box">
+        <div class="diff-row">
+          <div class="diff-label">현행</div>
+          <div class="diff-old">(더미) 충전사업자는 안전관리자를 선임하여야 한다...</div>
+        </div>
+        <div class="diff-row">
+          <div class="diff-label">개정</div>
+          <div class="diff-new">(더미) 충전사업자는 안전관리자를 선임하여야 하며, 저장능력에 따라 추가 인원을...</div>
+        </div>
+      </div>
+      <div class="card-actions">
+        <button class="btn-mini">원문 링크</button>
+        <button class="btn-mini filled">담당자 배정</button>
+      </div>
+    </div>
+
+    <!-- 카드 4 -->
+    <div class="card">
+      <div class="card-top">
+        <span class="pill pill-rule">시행규칙</span>
+        <span class="status status-done">요약완료</span>
+      </div>
+      <div class="card-title">도시가스사업법</div>
+      <div class="card-article">제25조 (안전점검) 외 1개 조문</div>
+      <div class="card-dates">
+        <div>공포일 <strong>2026.05.26</strong></div>
+        <div>시행예정 <strong>2026.11.27</strong></div>
+        <div class="dday">D-122</div>
+      </div>
+      <div class="card-summary">
+        정압기 안전점검 주기가 단축됩니다. 11월 27일 시행 전 점검 스케줄 조정이 필요합니다.
+      </div>
+      <div class="card-toggle" onclick="this.nextElementSibling.classList.toggle('show')">▸ 현행 / 개정 조문 비교 보기</div>
+      <div class="diff-box">
+        <div class="diff-row">
+          <div class="diff-label">현행</div>
+          <div class="diff-old">(더미) 정압기는 매 1년마다 안전점검을 실시하여야 한다...</div>
+        </div>
+        <div class="diff-row">
+          <div class="diff-label">개정</div>
+          <div class="diff-new">(더미) 정압기는 매 6개월마다 안전점검을 실시하여야 한다...</div>
+        </div>
+      </div>
+      <div class="card-actions">
+        <button class="btn-mini">원문 링크</button>
+        <button class="btn-mini filled">담당자 배정</button>
+      </div>
+    </div>
+
+    <!-- 카드 5 -->
+    <div class="card">
+      <div class="card-top">
+        <span class="pill pill-law">법률</span>
+        <span class="status status-pending">처리대기</span>
+      </div>
+      <div class="card-title">산업안전보건법</div>
+      <div class="card-article">타법개정 · 조문 추출 대기</div>
+      <div class="card-dates">
+        <div>공포일 <strong>2026.04.07</strong></div>
+        <div>시행예정 <strong>2026.12.08</strong></div>
+        <div class="dday" style="color:var(--text-sub);">D-133</div>
+      </div>
+      <div class="card-summary" style="color:var(--text-sub);">
+        타법개정 건입니다. 변경 조문 추출 배치가 아직 실행되지 않았습니다.
+      </div>
+      <div class="card-actions">
+        <button class="btn-mini">원문 링크</button>
+        <button class="btn-mini filled">지금 처리</button>
+      </div>
+    </div>
+
+  </div>
+</main>
+
+</body>
+</html>
