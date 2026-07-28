@@ -47,7 +47,7 @@
 - 백엔드: Firebase Cloud Function (Open API 프록시 역할 — OC 키 은닉, CORS 우회)
 - 배치: Firebase Scheduled Function (일/주 단위 실행)
 - 저장: Firebase Firestore — 처리된 개정 건 이력(중복 알림 방지), 조문별 변경 요약 캐시
-- AI 요약: Claude API
+- AI 요약: Gemini API (Google AI Studio 무료 티어 모델, 기본값 gemini-2.0-flash — 최초 계획은 Claude API였으나 비용 문제로 변경)
 
 ## 8. 비기능 요구사항
 - OC 키는 서버(Cloud Function) 측에만 보관, 프론트 노출 금지

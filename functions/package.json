@@ -16,7 +16,9 @@
     "save:selftest": "node scripts/savePendingAmendments.selftest.js",
     "articles:selftest": "node scripts/getChangedArticles.selftest.js",
     "diffs:selftest": "node scripts/getArticleDiffs.selftest.js",
-    "diffs-update:selftest": "node scripts/updateArticleDiffs.selftest.js"
+    "diffs-update:selftest": "node scripts/updateArticleDiffs.selftest.js",
+    "summarize:selftest": "node scripts/summarizeArticleImpact.selftest.js",
+    "summarize-update:selftest": "node scripts/updateSummaries.selftest.js"
   },
   "dependencies": {
     "fast-xml-parser": "^5.10.1",

@@ -6,6 +6,7 @@ const { detectPendingAmendments } = require('../lib/detectPendingAmendments');
 const { savePendingAmendments } = require('../lib/savePendingAmendments');
 const { updateChangedArticles } = require('../lib/updateChangedArticles');
 const { updateArticleDiffs } = require('../lib/updateArticleDiffs');
+const { updateSummaries } = require('../lib/updateSummaries');
 
 // 사용법:
 //   node scripts/detectAndSave.js "<fetchLawApi URL>"
@@ -72,6 +73,32 @@ async function main() {
     }
     console.log(`- ${r.docId}: ${r.articleDiffs.length}개 조문`);
     console.table(r.articleDiffs);
+  }
+
+  const docIdsWithDiffs = diffResults
+    .filter((r) => r.articleDiffs && r.articleDiffs.length > 0)
+    .map((r) => r.docId);
+
+  if (docIdsWithDiffs.length === 0) {
+    return;
+  }
+
+  if (!process.env.GEMINI_API_KEY) {
+    console.log('\nGEMINI_API_KEY가 없어 실무 영향 요약(STEP 6)은 건너뜁니다.');
+    return;
+  }
+
+  console.log('\nGemini로 조문별 실무 영향 요약을 생성합니다...\n');
+  const summaryResults = await updateSummaries(db, docIdsWithDiffs);
+
+  console.log('\n=== 실무 영향 요약 결과 (summary 필드로 저장됨, 처리상태 -> summarized) ===');
+  for (const r of summaryResults) {
+    if (r.error) {
+      console.log(`- ${r.docId}: 실패 (${r.error})`);
+      continue;
+    }
+    console.log(`- ${r.docId}:`);
+    console.table(r.summary.map((s) => ({ 조문번호: s.조문번호, 요약: s.요약 || `(실패: ${s.error})` })));
   }
 }
 

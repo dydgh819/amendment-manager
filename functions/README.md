@@ -198,3 +198,44 @@ STEP 4의 조문별 개정이력에서 조문시행일까지 함께 가져와야
 npm run diffs:selftest
 npm run diffs-update:selftest
 ```
+
+## STEP 6 — 실무 영향 요약 생성 (Gemini API, 무료 모델)
+
+STEP 5의 `articleDiffs`를 조문별로 LLM에 넘겨 실무 영향을 3~5문장으로 요약하고, 담당자가 시행
+전 준비할 액션이 있으면 명시하도록 한다. 결과는 문서의 `summary` 필드(조문별 배열)에 저장하고
+처리상태를 `pending` → `summarized`로 바꾼다.
+
+**PRD 원안(Claude API)에서 변경**: 비용 문제로 Claude API 대신 **Google AI Studio의 Gemini API
+무료 티어**를 사용한다. 기본 모델은 `gemini-2.0-flash`(무료 티어 대상)이며, 다른 무료 모델로
+바꾸려면 코드 수정 없이 `GEMINI_MODEL` 환경변수만 지정하면 된다.
+
+**API 키 준비 (무료)**:
+1. https://aistudio.google.com 에서 Google 계정으로 로그인해 API 키를 무료로 발급받는다.
+2. 로컬 실행 시: `export GEMINI_API_KEY=발급받은키`
+3. Cloud Function으로 배포할 때는(STEP 7) OC 키와 동일하게 Secret Manager로 관리한다:
+   `firebase functions:secrets:set GEMINI_API_KEY`
+
+프론트에는 이 키를 절대 넘기지 않는다 — STEP 1의 OC 키와 같은 원칙이다.
+
+```bash
+export GEMINI_API_KEY=발급받은키
+export FIRESTORE_EMULATOR_HOST=127.0.0.1:8080
+node scripts/detectAndSave.js "http://127.0.0.1:5001/<project-id>/asia-northeast3/fetchLawApi"
+```
+
+`GEMINI_API_KEY`가 없으면 `detectAndSave.js`는 STEP 6을 건너뛰고 나머지(STEP 2~5) 결과만
+출력한다 — Open API OC 키만 있고 Gemini 키가 아직 없어도 파이프라인 앞단을 계속 확인할 수 있다.
+
+**무료 티어 주의사항**: 무료 티어는 분당 호출 수 제한이 있다. 개정 건이 많거나 조문 수가 많으면
+호출이 순차적으로(한 번에 하나씩) 이뤄지도록 이미 구현해 뒀지만, 재시도/백오프 로직은 아직 없다
+(PRD상 STEP 10에서 다룰 예정). 조문 하나의 요약이 실패해도 나머지 조문은 계속 처리되고, 실패한
+조문은 `summary` 배열에 `error`와 함께 남는다(문서 전체가 막히지 않음).
+
+응답 파싱(`candidates[0].content.parts[0].text`)이 실제 Gemini 응답과 다를 가능성은 낮지만,
+차단(`promptFeedback.blockReason`)이나 빈 응답도 에러로 처리한다. 실제 텍스트 검증 없이도 확인
+가능한 프롬프트 구성·응답 파싱·Firestore 연동(부분 실패 허용, 빈 articleDiffs 스킵)을 검증한다:
+
+```bash
+npm run summarize:selftest
+npm run summarize-update:selftest
+```
