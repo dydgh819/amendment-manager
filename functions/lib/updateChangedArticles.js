@@ -24,6 +24,7 @@ async function updateChangedArticles(db, newlyInserted) {
     try {
       const changedArticles = await getChangedArticles({
         lawId: amendmentCase.법령ID,
+        mst: amendmentCase.MST,
         proclDate: toYmd(amendmentCase.공포일),
         logRaw: !loggedSample,
       });
