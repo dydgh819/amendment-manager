@@ -36,13 +36,21 @@ const MOCK_HISTORY_ENTRIES = [
 
 process.env.LAW_OC = 'fake-oc-for-test';
 
+// 실제 GitHub Actions 실행에서 updateChangedArticles.js가 MST를 넘기지 않고
+// ID만 보내 lsJoHstInf가 totalCnt:0을 반환한 사례가 있었다 — MST가 실제로
+// 요청 URL에 포함되는지 회귀 방지용으로 캡처해서 확인한다.
+let lastRequestedUrl;
+
 // parseUpstreamBody는 응답 텍스트가 '{'로 시작하면 XML 대신 JSON으로 그대로
 // 파싱하므로, 목업은 XML을 흉내낼 필요 없이 JSON 문자열을 바로 돌려주면 된다.
-global.fetch = async () => ({
-  ok: true,
-  status: 200,
-  text: async () => JSON.stringify({ LsJoHstInf: { joHst: MOCK_HISTORY_ENTRIES } }),
-});
+global.fetch = async (urlString) => {
+  lastRequestedUrl = urlString;
+  return {
+    ok: true,
+    status: 200,
+    text: async () => JSON.stringify({ LsJoHstInf: { joHst: MOCK_HISTORY_ENTRIES } }),
+  };
+};
 
 async function main() {
   // 1) 6자리 조문코드 포맷 변환 확인
@@ -52,6 +60,7 @@ async function main() {
   // 2) 공포일자 필터링 + 중복 제거 + 정렬
   const changed = await getChangedArticles({
     lawId: '001766',
+    mst: '287805',
     proclDate: TARGET_PROCL_DATE,
   });
 
@@ -65,6 +74,14 @@ async function main() {
 
   // 3) 무관한 과거 개정(제38조, 2006년)은 포함되지 않아야 함
   assert.ok(!changed.includes('제38조'), '과거(2006년) 개정 건이 필터링되지 않고 포함됨');
+
+  // 4) mst를 넘기면 실제 요청 URL에 MST 파라미터가 포함되어야 함 —
+  //    updateChangedArticles.js가 MST를 넘기지 않아 실서비스에서 lsJoHstInf가
+  //    totalCnt:0을 반환한 사례의 회귀 방지.
+  assert.ok(
+    new URL(lastRequestedUrl).searchParams.get('MST') === '287805',
+    `요청 URL에 MST 파라미터가 누락됨: ${lastRequestedUrl}`
+  );
 
   console.log('\n✅ 모든 검증 통과 — 공포일자 필터링·중복제거·정렬이 정상 동작합니다.');
 }
