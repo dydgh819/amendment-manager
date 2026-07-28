@@ -13,7 +13,8 @@
     "detect": "node scripts/detectPendingAmendments.js",
     "detect:selftest": "node scripts/detectPendingAmendments.selftest.js",
     "detect-and-save": "node scripts/detectAndSave.js",
-    "save:selftest": "node scripts/savePendingAmendments.selftest.js"
+    "save:selftest": "node scripts/savePendingAmendments.selftest.js",
+    "articles:selftest": "node scripts/getChangedArticles.selftest.js"
   },
   "dependencies": {
     "fast-xml-parser": "^5.10.1",

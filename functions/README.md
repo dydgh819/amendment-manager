@@ -135,3 +135,29 @@ npm run save:selftest
 
 이 자체 테스트는 6행짜리 목업 결과를 넣었을 때 정확히 5개 문서로 묶이는지, 재실행 시 기존
 5건이 스킵되는지, 새 개정 건이 섞였을 때 그 1건만 추가로 저장되는지를 확인한다.
+
+## STEP 4 — 조문별 변경 이력 조회 (변경 조문 번호 추출)
+
+STEP 3에서 새로 저장된 개정 건(법령ID + 공포일자)마다 "조문별 개정이력"을 조회해서,
+이번 개정으로 실제 바뀐 조문 번호만 추출해 `changedArticles` 필드로 문서에 업데이트한다.
+`node scripts/detectAndSave.js`를 실행하면 STEP 2~4가 이어서 자동으로 수행된다.
+
+**리스크 (PRD 9장 그대로 유효)**: 이 엔드포인트의 정확한 `target` 파라미터명과 응답
+필드명은 국가법령정보 Open API 공식 문서에서 100% 확정하지 못했다. `functions/lib/getChangedArticles.js`의
+`ARTICLE_HISTORY_TARGET`(현재 `lsJoHstInf`로 추정)과 `pick()` 후보 목록이 실제 응답과 다르면
+보정이 필요하다 — 실제 실행 시 `logRaw`로 첫 응답의 원본 구조가 콘솔에 함께 출력된다.
+
+다만 필터링 로직(조문개정일자가 이번 개정의 공포일자와 일치하는 조문만 추출) 자체는, 이 세션에
+연결된 `korean-law-mcp`로 실제 산업안전보건법 2026-07-07 공포 건을 조회해 확인한 실제 변경
+조문(제31조의2 신설, 제33조·제117조·제175조 일부개정)을 목업으로 재현해 검증했다:
+
+```bash
+npm run articles:selftest
+```
+
+전체 파이프라인(STEP 2 탐지 → STEP 3 저장 → STEP 4 변경 조문 추출)을 이어서 실행:
+
+```bash
+export FIRESTORE_EMULATOR_HOST=127.0.0.1:8080
+node scripts/detectAndSave.js "http://127.0.0.1:5001/<project-id>/asia-northeast3/fetchLawApi"
+```

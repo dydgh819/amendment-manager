@@ -4,6 +4,7 @@
 const admin = require('firebase-admin');
 const { detectPendingAmendments } = require('../lib/detectPendingAmendments');
 const { savePendingAmendments } = require('../lib/savePendingAmendments');
+const { updateChangedArticles } = require('../lib/updateChangedArticles');
 
 // 사용법:
 //   node scripts/detectAndSave.js "<fetchLawApi URL>"
@@ -34,6 +35,21 @@ async function main() {
   console.log(`\n=== 신규 감지되어 Firestore에 저장된 개정 건: 총 ${newlyInserted.length}건 ===`);
   console.table(
     newlyInserted.map((c) => ({ ...c, 시행예정일: c.시행예정일.join(' / ') }))
+  );
+
+  if (newlyInserted.length === 0) {
+    return;
+  }
+
+  console.log('\n신규 건에 대해 변경 조문을 조회합니다...\n');
+  const articleResults = await updateChangedArticles(db, baseUrl, newlyInserted);
+
+  console.log('\n=== 변경 조문 조회 결과 (changedArticles 필드로 저장됨) ===');
+  console.table(
+    articleResults.map((r) => ({
+      docId: r.docId,
+      changedArticles: r.changedArticles ? r.changedArticles.join(', ') : `(실패: ${r.error})`,
+    }))
   );
 }
 
