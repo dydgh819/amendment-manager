@@ -1,6 +1,8 @@
 #!/usr/bin/env node
 'use strict';
 
+require('dotenv').config();
+
 const admin = require('firebase-admin');
 const { detectPendingAmendments } = require('../lib/detectPendingAmendments');
 const { savePendingAmendments } = require('../lib/savePendingAmendments');
@@ -9,16 +11,18 @@ const { updateArticleDiffs } = require('../lib/updateArticleDiffs');
 const { updateSummaries } = require('../lib/updateSummaries');
 
 // 사용법:
-//   node scripts/detectAndSave.js "<fetchLawApi URL>"
-//   FETCH_LAW_API_URL=... node scripts/detectAndSave.js
+//   export LAW_OC=발급받은OC값
+//   export GEMINI_API_KEY=발급받은Gemini키   (없으면 STEP 6만 건너뜀)
+//   node scripts/detectAndSave.js
+// (또는 functions/.env 파일에 값들을 넣어두면 dotenv가 자동으로 읽는다)
 //
 // Firestore 접속은 firebase-admin의 기본 인증을 사용한다:
 //   - 로컬 에뮬레이터: FIRESTORE_EMULATOR_HOST=127.0.0.1:8080 환경변수를 먼저 설정
 //   - 실 프로젝트: GOOGLE_APPLICATION_CREDENTIALS로 서비스 계정 키 지정
+//     (또는 `gcloud auth application-default login`으로 로그인해 둔 상태)
 async function main() {
-  const baseUrl = process.argv[2] || process.env.FETCH_LAW_API_URL;
-  if (!baseUrl) {
-    console.error('fetchLawApi URL이 필요합니다. (인자 또는 FETCH_LAW_API_URL 환경변수)');
+  if (!process.env.LAW_OC) {
+    console.error('LAW_OC 환경변수가 필요합니다. (export LAW_OC=... 또는 functions/.env)');
     process.exitCode = 1;
     return;
   }
@@ -26,10 +30,9 @@ async function main() {
   admin.initializeApp();
   const db = admin.firestore();
 
-  console.log(`fetchLawApi 엔드포인트: ${baseUrl}`);
   console.log('15개 감시 대상 법령에 대해 eflaw 조회를 시작합니다...\n');
 
-  const flatResults = await detectPendingAmendments({ baseUrl, logRaw: true });
+  const flatResults = await detectPendingAmendments({ logRaw: true });
   console.log(`\neflaw 조회 결과: 시행대기 행 총 ${flatResults.length}개`);
 
   const newlyInserted = await savePendingAmendments(db, flatResults);
@@ -44,7 +47,7 @@ async function main() {
   }
 
   console.log('\n신규 건에 대해 변경 조문을 조회합니다...\n');
-  const articleResults = await updateChangedArticles(db, baseUrl, newlyInserted);
+  const articleResults = await updateChangedArticles(db, newlyInserted);
 
   console.log('\n=== 변경 조문 조회 결과 (changedArticles 필드로 저장됨) ===');
   console.table(
@@ -63,7 +66,7 @@ async function main() {
   }
 
   console.log('\n변경 조문의 시행 전/후 본문을 조회합니다...\n');
-  const diffResults = await updateArticleDiffs(db, baseUrl, docIdsWithArticles);
+  const diffResults = await updateArticleDiffs(db, docIdsWithArticles);
 
   console.log('\n=== 조문별 시행 전/후 본문 조회 결과 (articleDiffs 필드로 저장됨) ===');
   for (const r of diffResults) {

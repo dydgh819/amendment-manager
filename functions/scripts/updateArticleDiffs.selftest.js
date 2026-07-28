@@ -14,6 +14,8 @@ const { updateArticleDiffs } = require('../lib/updateArticleDiffs');
 
 const CURRENT_MST = '287805';
 
+process.env.LAW_OC = 'fake-oc-for-test';
+
 let currentMstLookupCount = 0;
 
 global.fetch = async (urlString) => {
@@ -27,7 +29,7 @@ global.fetch = async (urlString) => {
     return {
       ok: true,
       status: 200,
-      json: async () => ({ ok: true, data: { LawSearch: { law: { 법령일련번호: CURRENT_MST } } } }),
+      text: async () => JSON.stringify({ LawSearch: { law: { 법령일련번호: CURRENT_MST } } }),
     };
   }
 
@@ -38,10 +40,7 @@ global.fetch = async (urlString) => {
   return {
     ok: true,
     status: 200,
-    json: async () => ({
-      ok: true,
-      data: { Law: { 조문단위: { 조문제목: `${jo} 제목`, 조문내용 } } },
-    }),
+    text: async () => JSON.stringify({ Law: { 조문단위: { 조문제목: `${jo} 제목`, 조문내용 } } }),
   };
 };
 
@@ -91,11 +90,7 @@ async function main() {
     },
   });
 
-  const results = await updateArticleDiffs(db, 'http://mock/fetchLawApi', [
-    '001766_21374',
-    '001766_21534',
-    '001849_21252',
-  ]);
+  const results = await updateArticleDiffs(db, ['001766_21374', '001766_21534', '001849_21252']);
 
   console.log('결과:', JSON.stringify(results, null, 2));
 

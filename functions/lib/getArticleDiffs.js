@@ -22,8 +22,8 @@ function extractArticleEntry(rawData) {
   return toArray(rawEntries)[0];
 }
 
-async function fetchArticleText({ baseUrl, mst, jo, efYd, logRaw }) {
-  const rawData = await callFetchLawApi(baseUrl, {
+async function fetchArticleText({ mst, jo, efYd, logRaw }) {
+  const rawData = await callFetchLawApi({
     endpoint: 'lawService',
     target: 'law',
     MST: mst,
@@ -53,7 +53,6 @@ async function fetchArticleText({ baseUrl, mst, jo, efYd, logRaw }) {
  * 있음을 실제 데이터로 확인했다 (getCurrentMst.js 주석 참고).
  *
  * @param {object} options
- * @param {string} options.baseUrl
  * @param {string} options.currentMst 법령ID의 현재(현행) MST
  * @param {string} options.pendingMst 이 개정 건(공포번호) 고유의 eflaw MST
  * @param {string} options.efYd 시행예정일 YYYYMMDD (개정본 조회에 사용)
@@ -61,14 +60,7 @@ async function fetchArticleText({ baseUrl, mst, jo, efYd, logRaw }) {
  * @param {boolean} [options.logRaw]
  * @returns {Promise<Array<{조문번호, 조문제목, 현행본문, 개정본문}>>}
  */
-async function getArticleDiffs({
-  baseUrl,
-  currentMst,
-  pendingMst,
-  efYd,
-  changedArticles,
-  logRaw = false,
-}) {
+async function getArticleDiffs({ currentMst, pendingMst, efYd, changedArticles, logRaw = false }) {
   if (!currentMst || !pendingMst || !efYd) {
     throw new Error('currentMst, pendingMst, efYd는 모두 필수입니다.');
   }
@@ -85,8 +77,8 @@ async function getArticleDiffs({
 
     try {
       const [before, after] = await Promise.all([
-        fetchArticleText({ baseUrl, mst: currentMst, jo, logRaw: logRaw && !loggedSample }),
-        fetchArticleText({ baseUrl, mst: pendingMst, jo, efYd, logRaw: false }),
+        fetchArticleText({ mst: currentMst, jo, logRaw: logRaw && !loggedSample }),
+        fetchArticleText({ mst: pendingMst, jo, efYd, logRaw: false }),
       ]);
       loggedSample = true;
 

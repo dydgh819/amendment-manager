@@ -85,19 +85,18 @@ function sortArticleNumbers(articleNumbers) {
  * 이번 개정의 공포일자와 일치하는 항목만 걸러낸다.
  *
  * @param {object} options
- * @param {string} options.baseUrl fetchLawApi 엔드포인트
  * @param {string} options.lawId 법령ID
  * @param {string} [options.mst] 법령일련번호(있으면 함께 전달)
  * @param {string} options.proclDate 이번 개정의 공포일자 YYYYMMDD
  * @param {boolean} [options.logRaw] 원본 응답을 콘솔에 출력할지 여부
  * @returns {Promise<string[]>} 예: ["제31조의2", "제33조", "제117조", "제175조"]
  */
-async function getChangedArticles({ baseUrl, lawId, mst, proclDate, logRaw = false }) {
+async function getChangedArticles({ lawId, mst, proclDate, logRaw = false }) {
   if (!lawId || !proclDate) {
     throw new Error('lawId와 proclDate(공포일자)는 필수입니다.');
   }
 
-  const rawData = await callFetchLawApi(baseUrl, {
+  const rawData = await callFetchLawApi({
     endpoint: 'lawService',
     target: ARTICLE_HISTORY_TARGET,
     ID: lawId,

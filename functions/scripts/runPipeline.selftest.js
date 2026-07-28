@@ -9,8 +9,11 @@
 //   1) 정상 경로: 법령 1건(산업안전보건법)만 시행대기 상태로 흘려서 탐지→저장→
 //      변경조문추출→본문조회→요약까지 전부 성공하고 batchLogs에 5단계가 모두
 //      기록되는지 확인.
-//   2) 실패 경로: baseUrl을 비워서 탐지 단계 자체가 던지는 예외를 runPipeline이
-//      삼키고, 그래도 batchLogs에 실패 기록을 남기는지 확인.
+//   2) 실패 경로: pendingAmendments 컬렉션 접근 자체가 던지도록(Firestore 장애
+//      시뮬레이션) 만들어서, 저장 단계가 통째로 실패해도 runPipeline이 삼키고
+//      batchLogs에는 여전히 기록을 남기는지 확인. (탐지는 법령 단위로 이미
+//      try-catch되어 있어 LAW_OC가 없어도 "0건 성공"으로 끝나 버리므로, 이
+//      시나리오에는 쓸 수 없다 — Firestore 장애가 더 현실적인 통째 실패 사례다)
 //
 // 실행: node scripts/runPipeline.selftest.js
 
@@ -77,7 +80,7 @@ function mockFetch(urlString, init) {
     });
   }
 
-  // fetchLawApi 프록시 호출
+  // law.go.kr 직접 호출
   const target = url.searchParams.get('target');
   const id = url.searchParams.get('ID');
   const mst = url.searchParams.get('MST');
@@ -122,14 +125,15 @@ function mockFetch(urlString, init) {
     data = {};
   }
 
-  return Promise.resolve({ ok: true, status: 200, json: async () => ({ ok: true, data }) });
+  return Promise.resolve({ ok: true, status: 200, text: async () => JSON.stringify(data) });
 }
 
 async function runHappyPath() {
+  process.env.LAW_OC = 'fake-oc-for-test';
   global.fetch = mockFetch;
   const db = createFakeFirestore();
 
-  const log = await runPipeline({ baseUrl: 'http://mock/fetchLawApi', db });
+  const log = await runPipeline({ db });
 
   console.log('정상 경로 로그:', JSON.stringify(log, null, 2));
 
@@ -153,19 +157,31 @@ async function runHappyPath() {
 }
 
 async function runFailurePath() {
+  process.env.LAW_OC = 'fake-oc-for-test'; // 유효한 값 — 탐지는 정상적으로 1건을 찾아야 한다
   global.fetch = mockFetch;
-  const db = createFakeFirestore();
 
-  // baseUrl을 비워서 detectPendingAmendments가 즉시 던지도록 유도
-  const log = await runPipeline({ baseUrl: '', db });
+  // pendingAmendments 컬렉션 접근만 고장 나도록 만든 가짜 Firestore
+  // (batchLogs는 정상 동작해야 기록 여부를 검증할 수 있다).
+  const real = createFakeFirestore();
+  const brokenDb = {
+    collection(name) {
+      if (name === 'pendingAmendments') {
+        throw new Error('Firestore 연결 실패(테스트 시뮬레이션)');
+      }
+      return real.collection(name);
+    },
+  };
+
+  const log = await runPipeline({ db: brokenDb });
 
   console.log('\n실패 경로 로그:', JSON.stringify(log, null, 2));
 
-  assert.equal(log.단계.탐지.성공, false);
-  assert.ok(log.단계.탐지.error);
-  assert.ok(!log.단계.저장, '탐지 단계가 실패하면 저장 단계는 시도되지 않아야 함');
+  assert.equal(log.단계.탐지.성공, true, '탐지 자체는 정상 성공해야 함');
+  assert.equal(log.단계.저장.성공, false, '저장 단계는 Firestore 장애로 실패해야 함');
+  assert.ok(log.단계.저장.error);
+  assert.ok(!log.단계.변경조문추출, '저장 단계가 실패하면 다음 단계는 시도되지 않아야 함');
 
-  const batchLogs = db._dump('batchLogs');
+  const batchLogs = real._dump('batchLogs');
   assert.equal(batchLogs.length, 1, '실패해도 batchLogs에 1건 기록되어야 함');
 }
 

@@ -26,12 +26,12 @@ function extractLawEntries(rawData) {
 // 현재 MST 287805와 다름). 그래서 "현행본" 조회에는 이 함수로 별도 조회한
 // 법령ID의 현재 MST를 쓰고, "시행예정본" 조회에는 STEP 2/3에서 저장해 둔
 // 그 개정 건 고유의 MST를 쓴다.
-async function getCurrentMst({ baseUrl, lawId, logRaw = false }) {
+async function getCurrentMst({ lawId, logRaw = false }) {
   if (!lawId) {
     throw new Error('lawId가 필요합니다.');
   }
 
-  const rawData = await callFetchLawApi(baseUrl, {
+  const rawData = await callFetchLawApi({
     endpoint: 'lawSearch',
     target: 'law',
     ID: lawId,

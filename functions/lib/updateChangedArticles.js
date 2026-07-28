@@ -12,11 +12,10 @@ function toYmd(dottedDate) {
  * pendingAmendments 문서에 changedArticles 필드로 업데이트한다.
  *
  * @param {import('firebase-admin/firestore').Firestore} db
- * @param {string} baseUrl fetchLawApi 엔드포인트
  * @param {Array} newlyInserted savePendingAmendments()가 반환한 신규 저장 건 목록
  * @returns {Promise<Array<{docId, changedArticles: string[]|null, error?: string}>>}
  */
-async function updateChangedArticles(db, baseUrl, newlyInserted) {
+async function updateChangedArticles(db, newlyInserted) {
   const collection = db.collection(COLLECTION);
   const results = [];
   let loggedSample = false;
@@ -24,7 +23,6 @@ async function updateChangedArticles(db, baseUrl, newlyInserted) {
   for (const amendmentCase of newlyInserted) {
     try {
       const changedArticles = await getChangedArticles({
-        baseUrl,
         lawId: amendmentCase.법령ID,
         proclDate: toYmd(amendmentCase.공포일),
         logRaw: !loggedSample,

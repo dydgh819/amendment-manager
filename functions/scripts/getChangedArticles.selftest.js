@@ -34,13 +34,14 @@ const MOCK_HISTORY_ENTRIES = [
   { 조문번호통합: '003102', 개정구분: '일부개정', 변경사유: '본조신설', 조문개정일자: TARGET_PROCL_DATE },
 ];
 
+process.env.LAW_OC = 'fake-oc-for-test';
+
+// parseUpstreamBody는 응답 텍스트가 '{'로 시작하면 XML 대신 JSON으로 그대로
+// 파싱하므로, 목업은 XML을 흉내낼 필요 없이 JSON 문자열을 바로 돌려주면 된다.
 global.fetch = async () => ({
   ok: true,
   status: 200,
-  json: async () => ({
-    ok: true,
-    data: { LsJoHstInf: { joHst: MOCK_HISTORY_ENTRIES } },
-  }),
+  text: async () => JSON.stringify({ LsJoHstInf: { joHst: MOCK_HISTORY_ENTRIES } }),
 });
 
 async function main() {
@@ -50,7 +51,6 @@ async function main() {
 
   // 2) 공포일자 필터링 + 중복 제거 + 정렬
   const changed = await getChangedArticles({
-    baseUrl: 'http://mock/fetchLawApi',
     lawId: '001766',
     proclDate: TARGET_PROCL_DATE,
   });

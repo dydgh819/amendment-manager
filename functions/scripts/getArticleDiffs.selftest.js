@@ -17,6 +17,8 @@ const CURRENT_MST = '287805';
 const PENDING_MST = '283449';
 const EF_YD = '20260801';
 
+process.env.LAW_OC = 'fake-oc-for-test';
+
 global.fetch = async (urlString) => {
   const url = new URL(urlString);
   const mst = url.searchParams.get('MST');
@@ -36,16 +38,12 @@ global.fetch = async (urlString) => {
   return {
     ok: true,
     status: 200,
-    json: async () => ({
-      ok: true,
-      data: { Law: { 조문단위: { 조문제목: `${jo} 제목`, 조문내용 } } },
-    }),
+    text: async () => JSON.stringify({ Law: { 조문단위: { 조문제목: `${jo} 제목`, 조문내용 } } }),
   };
 };
 
 async function main() {
   const diffs = await getArticleDiffs({
-    baseUrl: 'http://mock/fetchLawApi',
     currentMst: CURRENT_MST,
     pendingMst: PENDING_MST,
     efYd: EF_YD,

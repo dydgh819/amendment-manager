@@ -15,10 +15,9 @@ const { writeBatchLog } = require('./writeBatchLog');
 // 연결 문제)까지 잡아서, 무슨 일이 있어도 batchLogs에는 기록을 남긴다.
 //
 // @param {object} options
-// @param {string} options.baseUrl fetchLawApi 엔드포인트
 // @param {import('firebase-admin/firestore').Firestore} options.db
 // @returns {Promise<object>} 기록된 로그 객체
-async function runPipeline({ baseUrl, db }) {
+async function runPipeline({ db }) {
   const log = {
     시작시각: new Date().toISOString(),
     단계: {},
@@ -27,7 +26,7 @@ async function runPipeline({ baseUrl, db }) {
   try {
     let flatResults;
     try {
-      flatResults = await detectPendingAmendments({ baseUrl });
+      flatResults = await detectPendingAmendments({});
       log.단계.탐지 = { 성공: true, 행수: flatResults.length };
     } catch (err) {
       log.단계.탐지 = { 성공: false, error: err.message };
@@ -49,7 +48,7 @@ async function runPipeline({ baseUrl, db }) {
 
     let articleResults;
     try {
-      articleResults = await updateChangedArticles(db, baseUrl, newlyInserted);
+      articleResults = await updateChangedArticles(db, newlyInserted);
       log.단계.변경조문추출 = {
         성공건수: articleResults.filter((r) => r.changedArticles && r.changedArticles.length > 0).length,
         실패건수: articleResults.filter((r) => !r.changedArticles).length,
@@ -69,7 +68,7 @@ async function runPipeline({ baseUrl, db }) {
 
     let diffResults;
     try {
-      diffResults = await updateArticleDiffs(db, baseUrl, docIdsWithArticles);
+      diffResults = await updateArticleDiffs(db, docIdsWithArticles);
       log.단계.본문조회 = {
         성공건수: diffResults.filter((r) => r.articleDiffs && r.articleDiffs.length > 0).length,
         실패건수: diffResults.filter((r) => !r.articleDiffs).length,

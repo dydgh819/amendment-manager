@@ -54,23 +54,18 @@ function todayYmd(date = new Date()) {
  * 15개 감시 대상 법령에 대해 target=eflaw 조회 → 시행일이 오늘 이후인
  * (= 공포됐지만 아직 시행 전인) 개정 건만 정리해서 반환한다.
  *
- * @param {object} options
- * @param {string} options.baseUrl fetchLawApi 엔드포인트 URL (필수)
+ * @param {object} [options]
  * @param {string} [options.today] 기준일 YYYYMMDD (기본: 실행 시점 오늘)
  * @param {boolean} [options.logRaw] 첫 번째 응답의 원본 구조를 콘솔에 출력할지 여부
  * @returns {Promise<Array<{법령ID, 법령명, MST, 공포번호, 공포일, 시행예정일}>>}
  */
-async function detectPendingAmendments({ baseUrl, today = todayYmd(), logRaw = false } = {}) {
-  if (!baseUrl) {
-    throw new Error('baseUrl(fetchLawApi 엔드포인트)이 필요합니다.');
-  }
-
+async function detectPendingAmendments({ today = todayYmd(), logRaw = false } = {}) {
   const results = [];
   let loggedSample = false;
 
   for (const { lawId, name } of TARGET_LAWS) {
     try {
-      const rawData = await callFetchLawApi(baseUrl, {
+      const rawData = await callFetchLawApi({
         endpoint: 'lawSearch',
         target: 'eflaw',
         ID: lawId,

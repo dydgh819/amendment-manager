@@ -42,17 +42,23 @@
 - 대시보드 알림 카드: 법령명 / 조문번호·제목 / 공포일·시행일 / 변경 요약(Claude 생성) / 원문 링크(전/후 비교)
 - 기존 건 대비 신규 감지 건만 노출 (중복 알림 방지 — 처리 이력 저장 필요)
 
-## 7. 기술 스택 (기존 패턴 준수)
+## 7. 기술 스택 (기존 패턴 준수 → Blaze 요금제 회피를 위해 일부 변경)
 - 프론트: 단일 HTML + 바닐라 JS
-- 백엔드: Firebase Cloud Function (Open API 프록시 역할 — OC 키 은닉, CORS 우회)
-- 배치: Firebase Scheduled Function (일/주 단위 실행)
-- 저장: Firebase Firestore — 처리된 개정 건 이력(중복 알림 방지), 조문별 변경 요약 캐시
+- 백엔드/배치: **Cloud Function 없음.** Firebase Spark(무료) 플랜의 Cloud Functions는
+  구글 소유 API 외 외부 네트워크(law.go.kr 등) 접근이 막혀 있어, law.go.kr·Gemini 호출과
+  Firestore 쓰기를 **GitHub Actions**(매일 cron + 수동 workflow_dispatch)로 이전했다.
+  OC 키·Gemini 키·Firestore 서비스 계정 키는 GitHub Secrets에만 보관한다.
+- 저장: Firebase Firestore(Spark 무료 등급) — 처리된 개정 건 이력(중복 알림 방지), 조문별 변경 요약 캐시
+- 대시보드(STEP 8/9)는 Firebase Hosting(Spark)에 올리고, "새로고침" 버튼은 Firestore를
+  다시 읽기만 한다 — 파이프라인 즉시 재실행이 필요하면 GitHub Actions 탭에서 수동 실행한다.
 - AI 요약: Gemini API (Google AI Studio 무료 티어 모델, 기본값 gemini-2.0-flash — 최초 계획은 Claude API였으나 비용 문제로 변경)
 
 ## 8. 비기능 요구사항
-- OC 키는 서버(Cloud Function) 측에만 보관, 프론트 노출 금지
+- OC 키·Gemini 키·Firestore 서비스 계정 키는 GitHub Actions Secrets에만 보관, 프론트/저장소
+  코드에 노출 금지
 - API 호출 실패 시 재시도 로직 (Open API 응답 지연/오류 대비)
-- 배치 주기 실패 알림 (예: 조회 실패 시 관리자에게 별도 표시)
+- 배치 주기 실패 알림 (예: 조회 실패 시 관리자에게 별도 표시) — 현재는 GitHub Actions 워크플로
+  자체가 실패로 표시되는 것과 `batchLogs` 컬렉션 기록으로 대체
 
 ## 9. 리스크 / 확인 필요 사항
 - 조문별 변경 이력 API의 정확한 응답 필드명·구조는 실제 호출 테스트로 확정 필요

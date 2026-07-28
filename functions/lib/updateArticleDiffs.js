@@ -13,11 +13,10 @@ function toYmd(dottedDate) {
  * 조문별 시행 전/후 본문을 조회하고 articleDiffs 필드로 저장한다.
  *
  * @param {import('firebase-admin/firestore').Firestore} db
- * @param {string} baseUrl fetchLawApi 엔드포인트
  * @param {string[]} docIds STEP 4에서 changedArticles가 채워진 문서 ID 목록
  * @returns {Promise<Array<{docId, articleDiffs: Array|null, error?: string}>>}
  */
-async function updateArticleDiffs(db, baseUrl, docIds) {
+async function updateArticleDiffs(db, docIds) {
   const collection = db.collection(COLLECTION);
   const currentMstCache = new Map();
   const results = [];
@@ -39,7 +38,7 @@ async function updateArticleDiffs(db, baseUrl, docIds) {
       if (!currentMstCache.has(data.법령ID)) {
         currentMstCache.set(
           data.법령ID,
-          await getCurrentMst({ baseUrl, lawId: data.법령ID, logRaw: !loggedSample })
+          await getCurrentMst({ lawId: data.법령ID, logRaw: !loggedSample })
         );
         loggedSample = true;
       }
@@ -52,7 +51,6 @@ async function updateArticleDiffs(db, baseUrl, docIds) {
       const efYd = toYmd([...data.시행예정일].sort()[0]);
 
       const articleDiffs = await getArticleDiffs({
-        baseUrl,
         currentMst,
         pendingMst: data.MST,
         efYd,

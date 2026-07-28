@@ -100,33 +100,23 @@ function xmlToFakeUpstreamText(lawId) {
   return MOCK_EFLAW_XML[lawId] || EMPTY_EFLAW_XML;
 }
 
-// fetchLawApi가 프론트에 돌려주는 { ok, data } 포맷을 그대로 흉내낸다.
-// (실제 XML->JSON 변환은 functions/index.js의 parseUpstreamBody와 동일하게
-//  fast-xml-parser + parseTagValue:false 를 사용해 앞자리 0 손실이 없게 한다.)
-const { XMLParser } = require('fast-xml-parser');
-const xmlParser = new XMLParser({
-  ignoreAttributes: false,
-  attributeNamePrefix: '@_',
-  trimValues: true,
-  parseTagValue: false,
-  parseAttributeValue: false,
-});
+// law.go.kr을 직접 호출하는 구조이므로, fetch가 반환하는 XML 원문 텍스트를
+// 그대로 흉내낸다 (파싱은 fetchLawApiClient.js가 담당).
+process.env.LAW_OC = 'fake-oc-for-test';
 
 global.fetch = async (urlString) => {
   const url = new URL(urlString);
   const lawId = url.searchParams.get('ID');
   const xml = xmlToFakeUpstreamText(lawId);
-  const data = xmlParser.parse(xml);
   return {
     ok: true,
     status: 200,
-    json: async () => ({ ok: true, data }),
+    text: async () => xml,
   };
 };
 
 async function main() {
   const results = await detectPendingAmendments({
-    baseUrl: 'http://mock/fetchLawApi',
     today: '20260728', // 오늘 날짜(2026-07-28) 기준
   });
 
