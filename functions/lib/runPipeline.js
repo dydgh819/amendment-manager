@@ -1,7 +1,7 @@
 'use strict';
 
 const { detectPendingAmendments } = require('./detectPendingAmendments');
-const { savePendingAmendments } = require('./savePendingAmendments');
+const { savePendingAmendments, findUnprocessedCases } = require('./savePendingAmendments');
 const { updateChangedArticles } = require('./updateChangedArticles');
 const { updateArticleDiffs } = require('./updateArticleDiffs');
 const { updateSummaries } = require('./updateSummaries');
@@ -45,13 +45,27 @@ async function runPipeline({ db }) {
       return log;
     }
 
-    if (newlyInserted.length === 0) {
+    let casesToProcess;
+    try {
+      // 이번에 새로 저장된 건뿐 아니라, 이전 실행에서 STEP 4가 실패해
+      // 'pending' 상태로 멈춰 있던 건도 함께 재시도한다 — dedup 때문에
+      // 새로 감지되지 않아 영원히 재처리 안 되는 문제를 막기 위함.
+      casesToProcess = await findUnprocessedCases(db);
+      if (casesToProcess.length > newlyInserted.length) {
+        log.단계.저장.재시도건수 = casesToProcess.length - newlyInserted.length;
+      }
+    } catch (err) {
+      console.error(`[오류] 미처리 건 조회 실패: ${err.message}`);
+      casesToProcess = newlyInserted;
+    }
+
+    if (casesToProcess.length === 0) {
       return log;
     }
 
     let articleResults;
     try {
-      articleResults = await updateChangedArticles(db, newlyInserted);
+      articleResults = await updateChangedArticles(db, casesToProcess);
       log.단계.변경조문추출 = {
         성공건수: articleResults.filter((r) => r.changedArticles && r.changedArticles.length > 0).length,
         실패건수: articleResults.filter((r) => !r.changedArticles).length,
