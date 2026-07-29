@@ -68,4 +68,21 @@ async function savePendingAmendments(db, flatResults) {
   return newlyInserted;
 }
 
-module.exports = { COLLECTION, groupByAmendmentCase, savePendingAmendments };
+/**
+ * 처리상태가 'pending'인데 changedArticles가 비어 있는 건을 모두 반환한다.
+ * STEP 4(변경조문 추출) API 계약 문제 등으로 한 번 실패하면, dedup 때문에
+ * 다음 실행에서 새로 감지되지 않아 영원히 재시도되지 않는 문제를 막기 위함 —
+ * 이번 실행에서 새로 저장된 건도 이 시점엔 이미 같은 상태이므로 함께 잡힌다.
+ *
+ * @param {import('firebase-admin/firestore').Firestore} db
+ * @returns {Promise<Array>} docId를 포함한 미처리 건 목록
+ */
+async function findUnprocessedCases(db) {
+  const collection = db.collection(COLLECTION);
+  const snapshot = await collection.where('처리상태', '==', 'pending').get();
+  return snapshot.docs
+    .map((doc) => ({ docId: doc.id, ...doc.data() }))
+    .filter((c) => !c.changedArticles || c.changedArticles.length === 0);
+}
+
+module.exports = { COLLECTION, groupByAmendmentCase, savePendingAmendments, findUnprocessedCases };

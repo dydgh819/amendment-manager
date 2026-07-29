@@ -60,15 +60,29 @@ function createFakeFirestore() {
           s.set(id, data);
           return { id };
         },
+        where(field, op, value) {
+          if (op !== '==') throw new Error(`지원하지 않는 연산자: ${op}`);
+          return {
+            async get() {
+              const docs = [...s.entries()]
+                .filter(([, data]) => data[field] === value)
+                .map(([id, data]) => ({ id, data: () => data }));
+              return { docs };
+            },
+          };
+        },
       };
     },
     _dump(name) {
       return [...store(name).entries()];
     },
+    _seed(name, id, data) {
+      store(name).set(id, data);
+    },
   };
 }
 
-function mockFetch(urlString, init) {
+function mockFetch(urlString, init, opts = {}) {
   const url = new URL(urlString);
 
   if (url.host.includes('generativelanguage.googleapis.com')) {
@@ -91,7 +105,7 @@ function mockFetch(urlString, init) {
   let data;
   if (target === 'eflaw') {
     data =
-      query === LAW_NAME
+      !opts.eflawEmpty && query === LAW_NAME
         ? {
             LawSearch: {
               law: {
@@ -187,9 +201,49 @@ async function runFailurePath() {
   assert.equal(batchLogs.length, 1, '실패해도 batchLogs에 1건 기록되어야 함');
 }
 
+// 실제로 겪은 사례: STEP 4(lsJoHstInf)가 파라미터 문제로 changedArticles를
+// 빈 배열로 남긴 채 'pending' 상태로 멈춘 문서가 있었다. dedup 때문에 다음
+// 실행에서 새로 감지되지 않아 영원히 재처리되지 않는 문제를, 이번 실행에
+// 새로 감지된 건이 하나도 없어도 그 문서를 다시 집어서 완료까지 이어가는지
+// 확인한다.
+async function runStuckDocRetryPath() {
+  process.env.LAW_OC = 'fake-oc-for-test';
+  global.fetch = (urlString, init) => mockFetch(urlString, init, { eflawEmpty: true });
+
+  const db = createFakeFirestore();
+  const stuckDocId = `${LAW_ID}_${PROCL_NO}`;
+  db._seed('pendingAmendments', stuckDocId, {
+    법령ID: LAW_ID,
+    법령명: LAW_NAME,
+    MST,
+    공포번호: PROCL_NO,
+    공포일: '2026.01.01',
+    시행예정일: [EF_YD],
+    changedArticles: [],
+    처리상태: 'pending',
+  });
+
+  const log = await runPipeline({ db });
+
+  console.log('\n막힌 건 재시도 로그:', JSON.stringify(log, null, 2));
+
+  assert.equal(log.단계.탐지.행수, 0, '이번 실행에서는 새로 감지된 건이 없어야 함');
+  assert.equal(log.단계.저장.신규건수, 0);
+  assert.equal(log.단계.저장.재시도건수, 1, '막혀 있던 건 1개가 재시도 대상으로 잡혀야 함');
+  assert.equal(log.단계.변경조문추출.성공건수, 1, '막혀 있던 건의 변경조문 추출이 이번엔 성공해야 함');
+
+  const stuckDoc = db._dump('pendingAmendments').find(([id]) => id === stuckDocId)?.[1];
+  assert.equal(
+    stuckDoc.처리상태,
+    'summarized',
+    '막혀 있던 건이 재처리를 통해 summarized까지 도달해야 함'
+  );
+}
+
 async function main() {
   await runHappyPath();
   await runFailurePath();
+  await runStuckDocRetryPath();
   console.log('\n✅ 모든 검증 통과 — 파이프라인 연결·집계·항상 배치로그 기록이 정상 동작합니다.');
 }
 
